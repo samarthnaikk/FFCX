@@ -1,5 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 import json
+import csv
+import os
 
 app = Flask(__name__)
 
@@ -173,6 +175,37 @@ def generate_slot_conflicts():
 
 # Generate conflicts dynamically based on actual time overlaps
 SLOT_CONFLICTS = generate_slot_conflicts()
+
+def load_courses_from_csv():
+    """Load courses from courses.csv file"""
+    courses = []
+    csv_path = os.path.join(os.path.dirname(__file__), 'courses.csv')
+    
+    if not os.path.exists(csv_path):
+        return courses
+    
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                # Skip empty rows or rows without course title
+                if not row.get('Course Title', '').strip():
+                    continue
+                    
+                course = {
+                    'course_code': row.get('Course Code', '').strip(),
+                    'title': row.get('Course Title', '').strip(),
+                    'type': row.get('Course Type', '').strip(),
+                    'credits': float(row.get('Credits', 0))
+                }
+                courses.append(course)
+    except Exception as e:
+        print(f"Error loading courses.csv: {e}")
+    
+    return courses
+
+# Load courses at startup
+AVAILABLE_COURSES = load_courses_from_csv()
 
 @app.route('/')
 def index():
@@ -478,6 +511,24 @@ def get_available_courses():
             'type': course_info['type']
         })
     return jsonify(available_courses)
+
+@app.route('/api/search-courses')
+def search_courses():
+    """API endpoint to search courses by name or code"""
+    query = request.args.get('q', '').strip().lower()
+    
+    if not query:
+        return jsonify([])
+    
+    results = []
+    for course in AVAILABLE_COURSES:
+        # Search in course title and course code
+        if (query in course['title'].lower() or 
+            query in course['course_code'].lower()):
+            results.append(course)
+    
+    # Limit results to prevent too many options
+    return jsonify(results[:20])
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

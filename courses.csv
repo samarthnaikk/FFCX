@@ -1,0 +1,166 @@
+l.no,Course Code,Course Title,Course Type,Version,L,T,P,J,Credits
+1,BCHY101L,Engineering Chemistry,Theory Only,1.0,3,0,0,0,3.0
+2,BCHY101P,Engineering Chemistry Lab,Lab Only,1.0,0,0,2,0,1.0
+3,BCSE101E,Computer Programming: Python,Embedded Theory and Lab,1.0,1,0,4,0,3.0
+4,BCSE102L,Structured and Object-Oriented Programming,Theory Only,1.0,2,0,0,0,2.0
+5,BCSE102P,Structured and Object-Oriented Programming Lab,Lab Only,1.0,0,0,4,0,2.0
+6,BCSE103E,Computer Programming: Java,Embedded Theory and Lab,1.0,1,0,4,0,3.0
+7,BEEE102L,Basic Electrical and Electronics Engineering,Theory Only,1.0,3,0,0,0,3.0
+8,BEEE102P,Basic Electrical and Electronics Engineering Lab,Lab Only,1.0,0,0,2,0,1.0
+9,BENG101L,Technical English Communication,Theory Only,1.0,2,0,0,0,2.0
+10,BENG101P,Technical English Communication Lab,Lab Only,1.0,0,0,2,0,1.0
+11,BENG102P,Technical Report Writing,Lab Only,1.0,0,0,2,0,1.0
+12,BFLE200L,B.Tech. Foreign Language - 2021onwards,Basket,1.0,0,0,0,0,2.0
+13,BHSM200L,B.Tech. HSM Elective - 2021 onwards,Basket,1.0,0,0,0,0,3.0
+14,BMAT101L,Calculus,Theory Only,1.0,3,0,0,0,3.0
+15,BMAT101P,Calculus Lab,Lab Only,1.0,0,0,2,0,1.0
+16,BMAT102L,Differential Equations and Transforms,Theory Only,1.0,3,1,0,0,4.0
+17,BMAT201L,Complex Variables and Linear Algebra,Theory Only,1.0,3,1,0,0,4.0
+18,BMAT202L,Probability and Statistics,Theory Only,1.0,3,0,0,0,3.0
+19,BMAT202P,Probability and Statistics Lab,Lab Only,1.0,0,0,2,0,1.0
+20,BPHY101L,Engineering Physics,Theory Only,1.0,3,0,0,0,3.0
+21,BPHY101P,Engineering Physics Lab,Lab Only,1.0,0,0,2,0,1.0
+22,BSTS101P,Quantitative Skills Practice I,Soft Skill,1.0,0,0,3,0,1.5
+23,BSTS102P,Quantitative Skills Practice II,Soft Skill,1.0,0,0,3,0,1.5
+24,BSTS201P,Qualitative Skills Practice I,Soft Skill,1.0,0,0,3,0,1.5
+25,BSTS202P,Qualitative Skills Practice II,Soft Skill,1.0,0,0,3,0,1.5
+1,BECE102L,Digital Systems Design,Theory Only,1.0,3,0,0,0,3.0
+2,BECE102P,Digital Systems Design Lab,Lab Only,1.0,0,0,2,0,1.0
+3,BECE204L,Microprocessors and Microcontrollers,Theory Only,1.0,3,0,0,0,3.0
+4,BECE204P,Microprocessors and Microcontrollers Lab,Lab Only,1.0,0,0,2,0,1.0
+5,BMAT205L,Discrete Mathematics and Graph Theory,Theory Only,1.0,3,1,0,0,4.0
+1,BCSE202L,Data Structures and Algorithms,Theory Only,1.0,3,0,0,0,3.0
+2,BCSE202P,Data Structures and Algorithms Lab,Lab Only,1.0,0,0,2,0,1.0
+3,BCSE203E,Web Programming,Embedded Theory and Lab,1.0,1,0,4,0,3.0
+4,BCSE204L,Design and Analysis of Algorithms,Theory Only,1.0,3,0,0,0,3.0
+5,BCSE204P,Design and Analysis of Algorithms Lab,Lab Only,1.0,0,0,2,0,1.0
+6,BCSE205L,Computer Architecture and Organization,Theory Only,1.0,3,0,0,0,3.0
+7,BCSE301L,Software Engineering,Theory Only,1.0,3,0,0,0,3.0
+8,BCSE301P,Software Engineering Lab,Lab Only,1.0,0,0,2,0,1.0
+9,BCSE302L,Database Systems,Theory Only,1.0,3,0,0,0,3.0
+10,BCSE302P,Database Systems Lab,Lab Only,1.0,0,0,2,0,1.0
+11,BCSE303L,Operating Systems,Theory Only,1.0,3,0,0,0,3.0
+12,BCSE303P,Operating Systems Lab,Lab Only,1.0,0,0,2,0,1.0
+13,BCSE304L,Theory of Computation,Theory Only,1.0,3,0,0,0,3.0
+14,BCSE305L,Embedded Systems,Theory Only,1.0,3,0,0,0,3.0
+15,BCSE306L,Artificial Intelligence,Theory Only,1.0,3,0,0,0,3.0
+16,BCSE307L,Compiler Design,Theory Only,1.0,3,0,0,0,3.0
+17,BCSE307P,Compiler Design Lab,Lab Only,1.0,0,0,2,0,1.0
+18,BCSE308L,Computer Networks,Theory Only,1.0,3,0,0,0,3.0
+19,BCSE308P,Computer Networks Lab,Lab Only,1.0,0,0,2,0,1.0
+20,BCSE309L,Cryptography and Network Security,Theory Only,1.0,3,0,0,0,3.0
+21,BCSE309P,Cryptography and Network Security Lab,Lab Only,1.0,0,0,2,0,1.0
+1,BCSE206L,Foundations of Data Science,Theory Only,1.0,3,0,0,0,3.0
+2,BCSE207L,Programming for Data Science,Theory Only,1.0,2,0,0,0,2.0
+3,BCSE207P,Programming for Data Science Lab,Lab Only,1.0,0,0,2,0,1.0
+4,BCSE208L,Data Mining,Theory Only,1.0,2,0,0,0,2.0
+5,BCSE208P,Data Mining Lab,Lab Only,1.0,0,0,2,0,1.0
+6,BCSE209L,Machine Learning,Theory Only,1.0,3,0,0,0,3.0
+7,BCSE209P,Machine Learning Lab,Lab Only,1.0,0,0,2,0,1.0
+8,BCSE310L,IoT Architectures and Protocols,Theory Only,1.0,3,0,0,0,3.0
+9,BCSE311L,Sensors and Actuator Devices,Theory Only,1.0,2,0,0,0,2.0
+10,BCSE311P,Sensors and Actuator Devices Lab,Lab Only,1.0,0,0,2,0,1.0
+11,BCSE312L,Programming for IoT Boards,Theory Only,1.0,2,0,0,0,2.0
+12,BCSE312P,Programming for IoT Boards Lab,Lab Only,1.0,0,0,2,0,1.0
+13,BCSE313L,Fundamentals of Fog and Edge Computing,Theory Only,1.0,3,0,0,0,3.0
+14,BCSE314L,Privacy and Security in IoT,Theory Only,1.0,3,0,0,0,3.0
+15,BCSE315L,Wearable Computing,Theory Only,1.0,3,0,0,0,3.0
+16,BCSE316L,Design of Smart Cities,Theory Only,1.0,3,0,0,0,3.0
+17,BCSE317L,Information Security,Theory Only,1.0,3,0,0,0,3.0
+18,BCSE318L,Data Privacy,Theory Only,1.0,3,0,0,0,3.0
+19,BCSE319L,Penetration Testing and Vulnerability Analysis,Theory Only,1.0,2,0,0,0,2.0
+20,BCSE319P,Penetration Testing and Vulnerability Analysis Lab,Lab Only,1.0,0,0,2,0,1.0
+21,BCSE320L,Web Application Security,Theory Only,1.0,3,0,0,0,3.0
+22,BCSE321L,Malware Analysis,Theory Only,1.0,2,0,0,0,2.0
+23,BCSE321P,Malware Analysis Lab,Lab Only,1.0,0,0,2,0,1.0
+24,BCSE322L,Digital Forensics,Theory Only,1.0,2,0,0,0,2.0
+25,BCSE322P,Digital Forensics Lab,Lab Only,1.0,0,0,2,0,1.0
+26,BCSE323L,Digital Watermarking and Steganography,Theory Only,1.0,3,0,0,0,3.0
+27,BCSE324L,Foundations of Blockchain Technology,Theory Only,1.0,3,0,0,0,3.0
+28,BCSE325L,Introduction to Bitcoin,Theory Only,1.0,3,0,0,0,3.0
+29,BCSE326L,Blockchain Architecture Design,Theory Only,1.0,3,0,0,0,3.0
+30,BCSE327L,Smart Contracts,Theory Only,1.0,2,0,0,0,2.0
+31,BCSE327P,Smart Contracts Lab,Lab Only,1.0,0,0,2,0,1.0
+32,BCSE328L,Cryptocurrency Technologies,Theory Only,1.0,3,0,0,0,3.0
+33,BCSE329L,Blockchain and Distributed Ledger Technology,Theory Only,1.0,2,0,0,0,2.0
+34,BCSE329P,Blockchain and Distributed Ledger Technology Lab,Lab Only,1.0,0,0,2,0,1.0
+35,BCSE330L,Public Key Infrastructure and Trust Management,Theory Only,1.0,3,0,0,0,3.0
+36,BCSE331L,Exploratory Data Analysis,Theory Only,1.0,2,0,0,0,2.0
+37,BCSE331P,Exploratory Data Analysis Lab,Lab Only,1.0,0,0,2,0,1.0
+38,BCSE332L,Deep Learning,Theory Only,1.0,3,0,0,0,3.0
+39,BCSE332P,Deep Learning Lab,Lab Only,1.0,0,0,2,0,1.0
+40,BCSE333L,Statistical Inference,Theory Only,1.0,2,0,0,0,2.0
+41,BCSE333P,Statistical Inference Lab,Lab Only,1.0,0,0,2,0,1.0
+42,BCSE334L,Predictive Analytics,Theory Only,1.0,3,0,0,0,3.0
+43,BCSE335L,Healthcare Data Analytics,Theory Only,1.0,3,0,0,0,3.0
+44,BCSE336L,Financial Data Analytics,Theory Only,1.0,2,0,0,0,2.0
+45,BCSE336P,Financial Data Analytics Lab,Lab Only,1.0,0,0,2,0,1.0
+53,BCSE401L,Internet of Things,Theory Only,1.0,3,0,0,0,3.0
+54,BCSE402L,Big Data Analytics,Theory Only,1.0,3,0,0,0,3.0
+55,BCSE403L,Digital Image Processing,Theory Only,1.0,3,0,0,0,3.0
+56,BCSE404L,Internet and Web Programming,Theory Only,1.0,3,0,0,0,3.0
+57,BCSE405L,Advanced Java Programming,Theory Only,1.0,3,0,0,0,3.0
+58,BCSE406L,NoSQL Databases,Theory Only,1.0,3,0,0,0,3.0
+59,BCSE407L,Computer Vision,Theory Only,1.0,3,0,0,0,3.0
+60,BCSE408L,Cloud Computing,Theory Only,1.0,3,0,0,0,3.0
+61,BCSE409L,Natural Language Processing,Theory Only,1.0,3,0,0,0,3.0
+62,BCSE410L,Cyber Security,Theory Only,1.0,3,0,0,0,3.0
+63,BCSE411L,Robotics and Automation,Theory Only,1.0,3,0,0,0,3.0
+64,BCSE412L,Parallel Computing,Theory Only,1.0,3,0,0,0,3.0
+65,BCSE413L,Soft Computing,Theory Only,1.0,3,0,0,0,3.0
+66,BCSE414L,High Performance Computing,Theory Only,1.0,3,0,0,0,3.0
+67,BCSE416L,Game Programming,Theory Only,1.0,3,0,0,0,3.0
+68,BCSE416P,Game Programming Lab,Lab Only,1.0,0,0,2,0,1.0
+69,BCSE417L,Machine Vision,Theory Only,1.0,3,0,0,0,3.0
+70,BCSE417P,Machine Vision Lab,Lab Only,1.0,0,0,2,0,1.0
+71,BCSE418L,Explainable Artificial Intelligence,Theory Only,1.0,2,0,0,0,2.0
+72,BCSE419L,Speech and Language Processing,Theory Only,1.0,3,0,0,0,3.0
+73,BCSE419P,Speech and Language Processing lab,Lab Only,1.0,0,0,2,0,1.0
+74,BCSE431L,Fundamentals of Quantum Computing,Theory Only,1.0,3,0,0,0,3.0
+75,BCSE432E,Reinforcement Learning,Embedded Theory and Lab,1.0,3,0,2,0,4.0
+76,BECM302E,Augmented and Virtual Reality,Embedded Theory and Lab,1.0,3,0,2,0,4.0
+77,BEEE303L,Control Systems,Theory Only,1.0,3,0,0,0,3.0
+78,BEEE303P,Control Systems Lab,Lab Only,1.0,0,0,2,0,1.0
+1,BCSE353E,Information Security Analysis and Audit,Embedded Theory and Lab,1.0,1,0,2,0,2.0
+2,BCSE354E,Information Security Management,Embedded Theory and Lab,1.0,1,0,2,0,2.0
+3,BHUM111L,Happiness and Well-being,Theory Only,1.0,3,0,0,0,3.0
+4,BHUM201L,Mass Communication,Theory Only,1.0,3,0,0,0,3.0
+5,BHUM202L,Rural Development,Theory Only,1.0,3,0,0,0,3.0
+6,BHUM203L,Introduction to Psychology,Theory Only,1.0,3,0,0,0,3.0
+7,BHUM204L,Industrial Psychology,Theory Only,1.0,3,0,0,0,3.0
+8,BHUM205L,Development Economics,Theory Only,1.0,3,0,0,0,3.0
+9,BHUM206L,International Economics,Theory Only,1.0,3,0,0,0,3.0
+10,BHUM207L,Engineering Economics,Theory Only,1.0,3,0,0,0,3.0
+11,BHUM208L,Economics of Strategy,Theory Only,1.0,3,0,0,0,3.0
+12,BHUM209L,Game Theory,Theory Only,1.0,3,0,0,0,3.0
+13,BHUM210E,Econometrics,Embedded Theory and Lab,1.0,2,0,2,0,3.0
+14,BHUM211L,Behavioral Economics,Theory Only,1.0,3,0,0,0,3.0
+15,BHUM212L,Mathematics for Economic Analysis,Theory Only,1.0,3,0,0,0,3.0
+16,BHUM213L,Corporate Social Responsibility,Theory Only,1.0,3,0,0,0,3.0
+17,BHUM214L,Political Science,Theory Only,1.0,3,0,0,0,3.0
+18,BHUM215L,International Relations,Theory Only,1.0,3,0,0,0,3.0
+19,BHUM216L,Indian Culture and Heritage,Theory Only,1.0,3,0,0,0,3.0
+20,BHUM217L,Contemporary India,Theory Only,1.0,3,0,0,0,3.0
+21,BHUM218L,Financial Management,Theory Only,1.0,3,0,0,0,3.0
+22,BHUM219L,Principles of Accounting,Theory Only,1.0,3,0,0,0,3.0
+23,BHUM220L,Financial Markets and Institutions,Theory Only,1.0,3,0,0,0,3.0
+24,BHUM221L,Economics of Money, Banking and Financial Markets,Theory Only,1.0,3,0,0,0,3.0
+25,BHUM222L,Security Analysis and Portfolio Management,Theory Only,1.0,3,0,0,0,3.0
+26,BHUM223L,Options, Futures and other Derivatives,Theory Only,1.0,3,0,0,0,3.0
+27,BHUM224L,Fixed Income Securities,Theory Only,1.0,3,0,0,0,3.0
+28,BHUM225L,Personal Finance,Theory Only,1.0,3,0,0,0,3.0
+29,BHUM226L,Corporate Finance,Theory Only,1.0,3,0,0,0,3.0
+30,BHUM227L,Financial Statement Analysis,Theory Only,1.0,3,0,0,0,3.0
+31,BHUM228L,Cost and Management Accounting,Theory Only,1.0,3,0,0,0,3.0
+32,BHUM229L,Mind, Embodiment and Technology,Theory Only,1.0,3,0,0,0,3.0
+33,BHUM230L,Health Humanities in Biotechnological Era,Theory Only,1.0,3,0,0,0,3.0
+34,BHUM231L,Reproductive Choices for a Sustainable Society,Theory Only,1.0,3,0,0,0,3.0
+35,BHUM232L,Introduction to Sustainable Aging,Theory Only,1.0,3,0,0,0,3.0
+36,BHUM233L,Environmental Psychology,Theory Only,1.0,3,0,0,0,3.0
+37,BHUM234L,Indian Psychology,Theory Only,1.0,3,0,0,0,3.0
+38,BHUM235E,Psychology of Wellness,Embedded Theory and Lab,1.0,2,0,2,0,3.0
+39,BMGT108L,Entrepreneurship,Theory Only,1.0,3,0,0,0,3.0
+40,BSTS301P,Advanced Competitive Coding - I,Soft Skill,1.0,0,0,3,0,1.5
+41,BSTS302P,Advanced Competitive Coding - II,Soft Skill,1.0,0,0,3,0,1.5
+1,BENG101N,Effective English Communication,Lab Only,1.0,0,0,4,0,2.0
+3,BEXC100N,"Extracurricular Activities / Co-Curricular Activities - B.Tech. Programmes",Basket,1.0,0,0,0,0,2.0

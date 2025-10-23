@@ -379,6 +379,23 @@
                 font-size: 0.7em;
             }
         }
+        
+        /* Autocomplete dropdown styles */
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-item .fw-bold {
+            color: #495057;
+        }
+        
+        .dropdown-item .text-muted {
+            font-size: 0.875em;
+        }
     </style>
 </head>
 <body>
@@ -624,16 +641,57 @@
                         </div>
                         <div class="modal-body">
                             <form @submit.prevent="addCourse">
-                                <div class="mb-3">
-                                    <label class="form-label">Subject Name</label>
-                                    <input v-model="newCourse.subject_name" type="text" class="form-control" required 
-                                           placeholder="Enter subject name (e.g., Data Structures, Calculus)">
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label">Course Name</label>
+                                    <input v-model="courseSearchQuery" 
+                                           @input="searchCourses" 
+                                           @focus="showCourseDropdown = true"
+                                           type="text" class="form-control" required 
+                                           placeholder="Start typing course name (e.g., Computer Programming)"
+                                           autocomplete="off">
+                                    
+                                    <!-- Course dropdown -->
+                                    <div v-if="showCourseDropdown && searchResults.length > 0" 
+                                         class="dropdown-menu show w-100 mt-1" style="max-height: 200px; overflow-y: auto;">
+                                        <div v-for="course in searchResults" :key="course.course_code" 
+                                             @click="selectCourse(course)"
+                                             class="dropdown-item cursor-pointer">
+                                            <div class="fw-bold" v-text="course.title"></div>
+                                            <small class="text-muted">
+                                                <span v-text="course.course_code"></span> • 
+                                                <span v-text="course.type"></span> • 
+                                                <span v-text="course.credits"></span> credits
+                                            </small>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Slot</label>
-                                    <input v-model="newCourse.slot" type="text" class="form-control" required 
-                                           placeholder="Enter slot (e.g., A1, B2, L31)">
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Course Code</label>
+                                        <input v-model="newCourse.course_code" type="text" class="form-control" readonly
+                                               placeholder="Auto-filled">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Course Type</label>
+                                        <input v-model="newCourse.course_type" type="text" class="form-control" readonly
+                                               placeholder="Auto-filled">
+                                    </div>
                                 </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Credits</label>
+                                        <input v-model="newCourse.credits" type="number" step="0.5" class="form-control" readonly
+                                               placeholder="Auto-filled">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Slot</label>
+                                        <input v-model="newCourse.slot" type="text" class="form-control" required 
+                                               placeholder="Enter slot (e.g., A1, B2, L31)">
+                                    </div>
+                                </div>
+                                
                                 <div class="mb-3">
                                     <label class="form-label">Faculty Name</label>
                                     <input v-model="newCourse.faculty" type="text" class="form-control" required 
@@ -680,10 +738,16 @@
                     showAddModal: false,
                     newCourse: {
                         subject_name: '',
+                        course_code: '',
+                        course_type: '',
+                        credits: '',
                         slot: '',
                         faculty: '',
                         venue: ''
                     },
+                    courseSearchQuery: '',
+                    searchResults: [],
+                    showCourseDropdown: false,
                     totalCourses: 0,
                     totalCredits: 0,
                     busyHours: 0,
@@ -725,6 +789,13 @@
                 this.fetchTimetable();
                 this.fetchCourses();
                 this.fetchAvailableCourses();
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.position-relative')) {
+                        this.showCourseDropdown = false;
+                    }
+                });
             },
             methods: {
                 async fetchTimetable() {
@@ -809,10 +880,45 @@
                 resetNewCourse() {
                     this.newCourse = {
                         subject_name: '',
+                        course_code: '',
+                        course_type: '',
+                        credits: '',
                         slot: '',
                         faculty: '',
                         venue: ''
                     };
+                    this.courseSearchQuery = '';
+                    this.searchResults = [];
+                    this.showCourseDropdown = false;
+                },
+
+                async searchCourses() {
+                    if (this.courseSearchQuery.length < 1) {
+                        this.searchResults = [];
+                        this.showCourseDropdown = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/search-courses?q=${encodeURIComponent(this.courseSearchQuery)}`);
+                        const results = await response.json();
+                        this.searchResults = results;
+                        this.showCourseDropdown = results.length > 0;
+                    } catch (error) {
+                        console.error('Error searching courses:', error);
+                        this.searchResults = [];
+                        this.showCourseDropdown = false;
+                    }
+                },
+
+                selectCourse(course) {
+                    this.newCourse.subject_name = course.title;
+                    this.newCourse.course_code = course.course_code;
+                    this.newCourse.course_type = course.type;
+                    this.newCourse.credits = course.credits;
+                    this.courseSearchQuery = course.title;
+                    this.showCourseDropdown = false;
+                    this.searchResults = [];
                 },
 
 
