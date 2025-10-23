@@ -239,26 +239,41 @@ def get_courses():
                     enrolled_slots.add(slot['slot'])
     
     # Build course list with details
-    for course_code in enrolled_courses:
-        # Handle both predefined courses and manually added courses
-        if course_code in COURSE_INFO:
+    for course_id in enrolled_courses:
+        # Get the first instance of this course to extract metadata
+        first_instance = None
+        for day_schedule in TIMETABLE_TEMPLATE.values():
+            for slot in day_schedule:
+                if slot['course'] == course_id:
+                    first_instance = slot
+                    break
+            if first_instance:
+                break
+        
+        if not first_instance:
+            continue
+            
+        # Check if this is a predefined course by looking at the stored course_code
+        stored_course_code = first_instance.get('course_code', '')
+        if stored_course_code and stored_course_code in COURSE_INFO:
+            # Use predefined course info but override with stored data if available
             course_data = {
-                "course_code": course_code,
-                "name": COURSE_INFO[course_code]["name"],
-                "credits": COURSE_INFO[course_code]["credits"],
-                "type": COURSE_INFO[course_code]["type"],
+                "course_code": stored_course_code,
+                "name": first_instance.get('name', COURSE_INFO[stored_course_code]["name"]),
+                "credits": first_instance.get('credits', COURSE_INFO[stored_course_code]["credits"]),
+                "type": first_instance.get('course_type', COURSE_INFO[stored_course_code]["type"]),
                 "slots": [],
                 "faculty": "",
                 "venue": "",
                 "available_slots": []
             }
         else:
-            # For manually added courses, use the subject name and slot info from timetable
+            # For manually added courses, use stored metadata
             course_data = {
-                "course_code": course_code,
-                "name": "",  # Will be filled from timetable data
-                "credits": 0,  # Unknown for manually added courses
-                "type": "Unknown",
+                "course_code": stored_course_code or "N/A",
+                "name": first_instance.get('name', 'Unknown Course'),
+                "credits": first_instance.get('credits', 0),
+                "type": first_instance.get('course_type', 'Unknown'),
                 "slots": [],
                 "faculty": "",
                 "venue": "",
@@ -268,13 +283,11 @@ def get_courses():
         # Collect slots and faculty info for this course
         for day, day_schedule in TIMETABLE_TEMPLATE.items():
             for slot in day_schedule:
-                if slot['course'] == course_code:
+                if slot['course'] == course_id:
                     course_data["slots"].append(f"{slot['slot']} ({day[:3]})")
                     course_data["available_slots"].append(f"{slot['available_slots']} ({day[:3]})")
                     if not course_data["faculty"]:
                         course_data["faculty"] = slot['faculty']
-                    if not course_data["name"] and slot['name']:
-                        course_data["name"] = slot['name']
                     if not course_data["venue"]:
                         course_data["venue"] = slot['venue']
         
@@ -452,6 +465,17 @@ def add_course():
         # Create a unique course identifier that includes all slots
         course_id = f"{subject_name}_{'+'.join(requested_slots)}"
         
+        # Get course metadata from the form data
+        course_code = data.get('course_code', '').strip()
+        course_type = data.get('course_type', '').strip()
+        credits = data.get('credits', 0)
+        
+        # Convert credits to float if it's a string
+        try:
+            credits = float(credits) if credits else 0
+        except (ValueError, TypeError):
+            credits = 0
+        
         # Fill all available instances of all requested slots
         filled_slots = []
         for day, time_index, time_slot, slot in all_available_slots:
@@ -460,7 +484,10 @@ def add_course():
                 'name': subject_name,
                 'faculty': faculty,
                 'venue': venue,
-                'slot': slot  # Individual slot for this time period
+                'slot': slot,  # Individual slot for this time period
+                'course_code': course_code,  # Store actual course code
+                'course_type': course_type,  # Store course type
+                'credits': credits  # Store credits
             })
             filled_slots.append(f"{slot} on {day} at {time_slot['time']}")
         
