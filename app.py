@@ -90,134 +90,89 @@ COURSE_INFO = {
 
 # VIT FFCS Slot conflict rules - Labs have different timings and conflicts
 # Lab sessions typically run for 1 hour 50 minutes (110 minutes) spanning multiple theory periods
-SLOT_CONFLICTS = {
-    # Monday conflicts - Labs overlap with multiple theory slots
-    "A1": ["L1"], "L1": ["A1"],  # L1: 08:00-09:40 (overlaps A1 + part of F1)
-    "F1": ["L2"], "L2": ["F1"],  # L2: 08:51-10:40 (overlaps F1 + D1)
-    "D1": ["L3"], "L3": ["D1"],  # L3: 09:51-11:30 (overlaps D1 + TB1)
-    "TB1": ["L4"], "L4": ["TB1"], # L4: 10:41-12:30 (overlaps TB1 + TG1)
-    "TG1": ["L5"], "L5": ["TG1"], # L5: 11:40-13:20 (overlaps TG1 + lunch)
-    
-    # Labs L1-L5 have extended conflicts due to their longer duration
-    "L1": ["A1", "F1"], "F1": ["L1", "L2"], 
-    "L2": ["F1", "D1"], "D1": ["L2", "L3"],
-    "L3": ["D1", "TB1"], "TB1": ["L3", "L4"],
-    "L4": ["TB1", "TG1"], "TG1": ["L4", "L5"],
-    "L5": ["TG1"],
-    
-    "A2": ["L31"], "L31": ["A2"],
-    "F2": ["L32"], "L32": ["F2"],
-    "D2": ["L33"], "L33": ["D2"],
-    "TB2": ["L34"], "L34": ["TB2"],
-    "TG2": ["L35"], "L35": ["TG2"],
-    
-    # Extended afternoon lab conflicts
-    "L31": ["A2", "F2"], "F2": ["L31", "L32"],
-    "L32": ["F2", "D2"], "D2": ["L32", "L33"],
-    "L33": ["D2", "TB2"], "TB2": ["L33", "L34"],
-    "L34": ["TB2", "TG2"], "TG2": ["L34", "L35"],
-    "L35": ["TG2"],
-    
-    # Tuesday conflicts with similar lab overlap patterns
-    "B1": ["L7"], "L7": ["B1"],
-    "G1": ["L8"], "L8": ["G1"],
-    "E1": ["L9"], "L9": ["E1"],
-    "TC1": ["L10"], "L10": ["TC1"],
-    "TAA1": ["L11"], "L11": ["TAA1"],
-    
-    "L7": ["B1", "G1"], "G1": ["L7", "L8"],
-    "L8": ["G1", "E1"], "E1": ["L8", "L9"],
-    "L9": ["E1", "TC1"], "TC1": ["L9", "L10"],
-    "L10": ["TC1", "TAA1"], "TAA1": ["L10", "L11"],
-    "L11": ["TAA1"],
-    
-    "B2": ["L37"], "L37": ["B2"],
-    "G2": ["L38"], "L38": ["G2"],
-    "E2": ["L39"], "L39": ["E2"],
-    "TC2": ["L40"], "L40": ["TC2"],
-    "TAA2": ["L41"], "L41": ["TAA2"],
-    
-    "L37": ["B2", "G2"], "G2": ["L37", "L38"],
-    "L38": ["G2", "E2"], "E2": ["L38", "L39"],
-    "L39": ["E2", "TC2"], "TC2": ["L39", "L40"],
-    "L40": ["TC2", "TAA2"], "TAA2": ["L40", "L41"],
-    "L41": ["TAA2"],
-    
-    # Wednesday conflicts
-    "C1": ["L13"], "L13": ["C1"],
-    "A1": ["L14"], "L14": ["A1"],
-    "F1": ["L15"], "L15": ["F1"],
-    "V1": ["L16"], "L16": ["V1"],
-    "V2": ["L17"], "L17": ["V2"],
-    
-    "L13": ["C1", "A1"], "A1": ["L13", "L14"],
-    "L14": ["A1", "F1"], "F1": ["L14", "L15"],
-    "L15": ["F1", "V1"], "V1": ["L15", "L16"],
-    "L16": ["V1", "V2"], "V2": ["L16", "L17"],
-    "L17": ["V2"],
-    
-    "C2": ["L43"], "L43": ["C2"],
-    "A2": ["L44"], "L44": ["A2"],
-    "F2": ["L45"], "L45": ["F2"],
-    "TD2": ["L46"], "L46": ["TD2"],
-    "TBB2": ["L47"], "L47": ["TBB2"],
-    
-    "L43": ["C2", "A2"], "A2": ["L43", "L44"],
-    "L44": ["A2", "F2"], "F2": ["L44", "L45"],
-    "L45": ["F2", "TD2"], "TD2": ["L45", "L46"],
-    "L46": ["TD2", "TBB2"], "TBB2": ["L46", "L47"],
-    "L47": ["TBB2"],
-    
-    # Thursday conflicts
-    "D1": ["L19"], "L19": ["D1"],
-    "B1": ["L20"], "L20": ["B1"],
-    "G1": ["L21"], "L21": ["G1"],
-    "TE1": ["L22"], "L22": ["TE1"],
-    "TCC1": ["L23"], "L23": ["TCC1"],
-    
-    "L19": ["D1", "B1"], "B1": ["L19", "L20"],
-    "L20": ["B1", "G1"], "G1": ["L20", "L21"],
-    "L21": ["G1", "TE1"], "TE1": ["L21", "L22"],
-    "L22": ["TE1", "TCC1"], "TCC1": ["L22", "L23"],
-    "L23": ["TCC1"],
-    
-    "D2": ["L49"], "L49": ["D2"],
-    "B2": ["L50"], "L50": ["B2"],
-    "G2": ["L51"], "L51": ["G2"],
-    "TE2": ["L52"], "L52": ["TE2"],
-    "TCC2": ["L53"], "L53": ["TCC2"],
-    
-    "L49": ["D2", "B2"], "B2": ["L49", "L50"],
-    "L50": ["B2", "G2"], "G2": ["L50", "L51"],
-    "L51": ["G2", "TE2"], "TE2": ["L51", "L52"],
-    "L52": ["TE2", "TCC2"], "TCC2": ["L52", "L53"],
-    "L53": ["TCC2"],
-    
-    # Friday conflicts
-    "E1": ["L25"], "L25": ["E1"],
-    "C1": ["L26"], "L26": ["C1"],
-    "TA1": ["L27"], "L27": ["TA1"],
-    "TF1": ["L28"], "L28": ["TF1"],
-    "TD1": ["L29"], "L29": ["TD1"],
-    
-    "L25": ["E1", "C1"], "C1": ["L25", "L26"],
-    "L26": ["C1", "TA1"], "TA1": ["L26", "L27"],
-    "L27": ["TA1", "TF1"], "TF1": ["L27", "L28"],
-    "L28": ["TF1", "TD1"], "TD1": ["L28", "L29"],
-    "L29": ["TD1"],
-    
-    "E2": ["L55"], "L55": ["E2"],
-    "C2": ["L56"], "L56": ["C2"],
-    "TA2": ["L57"], "L57": ["TA2"],
-    "TF2": ["L58"], "L58": ["TF2"],
-    "TDD2": ["L59"], "L59": ["TDD2"],
-    
-    "L55": ["E2", "C2"], 
-    "L56": ["C2", "TA2"], 
-    "L57": ["TA2", "TF2"], 
-    "L58": ["TF2", "TDD2"], 
-    "L59": ["TDD2"]
-}
+def _parse_hhmm(t):
+    """Parse a single HH:MM string to minutes since midnight. Returns int or None."""
+    try:
+        hour, minute = map(int, t.split(':'))
+        return hour * 60 + minute
+    except Exception:
+        return None
+
+
+def parse_time_range(range_str):
+    """Parse a range like '08:00-08:50' into (start_min, end_min) or (None, None) for non-times."""
+    if not range_str or range_str in ('LUNCH', '-', ''):
+        return None, None
+    parts = range_str.split('-')
+    if len(parts) != 2:
+        return None, None
+    start = _parse_hhmm(parts[0].strip())
+    end = _parse_hhmm(parts[1].strip())
+    if start is None or end is None:
+        return None, None
+    return start, end
+
+
+def range_overlap(r1, r2):
+    """Return True if two (start,end) minute ranges overlap."""
+    if r1[0] is None or r1[1] is None or r2[0] is None or r2[1] is None:
+        return False
+    return r1[0] < r2[1] and r2[0] < r1[1]
+
+
+def generate_slot_conflicts():
+    """Generate comprehensive slot conflicts based on actual time overlaps.
+
+    This function collects all time ranges where a given slot appears (a slot may appear
+    in multiple day/time entries). It then marks two slots as conflicting if any of their
+    time ranges overlap.
+    """
+    from collections import defaultdict
+
+    slot_ranges = defaultdict(list)  # slot -> list of (start,end)
+
+    # Collect ranges for each slot across timetable
+    for day, schedule in TIMETABLE_TEMPLATE.items():
+        for slot_info in schedule:
+            available_slots = [s.strip() for s in slot_info['available_slots'].split('/')]
+            theory_range = parse_time_range(slot_info.get('theory_time', ''))
+            lab_range = parse_time_range(slot_info.get('lab_time', ''))
+
+            for s in available_slots:
+                if not s or s == '-':
+                    continue
+                if s.startswith('L'):
+                    if lab_range[0] is not None:
+                        slot_ranges[s].append(lab_range)
+                else:
+                    if theory_range[0] is not None:
+                        slot_ranges[s].append(theory_range)
+
+    # Build conflict map
+    conflicts = {s: [] for s in slot_ranges}
+
+    slots = list(slot_ranges.keys())
+    for i, s1 in enumerate(slots):
+        for j, s2 in enumerate(slots):
+            if s1 == s2:
+                continue
+            # If any range of s1 overlaps any range of s2, they conflict
+            overlap_found = False
+            for r1 in slot_ranges[s1]:
+                for r2 in slot_ranges[s2]:
+                    if range_overlap(r1, r2):
+                        overlap_found = True
+                        break
+                if overlap_found:
+                    break
+            if overlap_found:
+                conflicts[s1].append(s2)
+
+    return conflicts
+
+
+# Generate conflicts dynamically based on actual time overlaps
+SLOT_CONFLICTS = generate_slot_conflicts()
 
 @app.route('/')
 def index():
@@ -347,6 +302,36 @@ def get_slot_info():
             slot_info[day].append(slot_data)
     
     return jsonify(slot_info)
+
+@app.route('/api/debug-conflicts')
+def debug_conflicts():
+    """Debug endpoint to see all generated conflicts and test specific cases"""
+    # Test the specific case mentioned by user
+    test_cases = {
+        'L10_vs_E1': {
+            'L10_time': None,
+            'E1_time': None,
+            'should_conflict': True,
+            'actual_conflict': 'E1' in SLOT_CONFLICTS.get('L10', [])
+        }
+    }
+    
+    # Get actual times for test slots
+    for day, schedule in TIMETABLE_TEMPLATE.items():
+        for slot_info in schedule:
+            available_slots = slot_info['available_slots'].split('/')
+            if 'L10' in available_slots:
+                test_cases['L10_vs_E1']['L10_time'] = slot_info['lab_time']
+            if 'E1' in available_slots:
+                test_cases['L10_vs_E1']['E1_time'] = slot_info['theory_time']
+    
+    return jsonify({
+        'total_conflicts': len(SLOT_CONFLICTS),
+        'test_cases': test_cases,
+        'sample_conflicts': {k: v for k, v in list(SLOT_CONFLICTS.items())[:5]},
+        'L10_conflicts': SLOT_CONFLICTS.get('L10', []),
+        'E1_conflicts': SLOT_CONFLICTS.get('E1', [])
+    })
 
 @app.route('/api/add-course', methods=['POST'])
 def add_course():
