@@ -426,10 +426,7 @@
                                 </div>
                             </div>
                             <div v-else class="free-period-info">
-                                <div class="add-course-btn" @click="showAddCourseModal(day, index)">
-                                    <i class="fas fa-plus-circle"></i>
-                                    <span>Add Course</span>
-                                </div>
+                                <div class="course-name">Free Period</div>
                                 <div class="available-slots-free" v-text="slot.available_slots"></div>
                             </div>
                         </div>
@@ -444,13 +441,18 @@
                         <i class="fas fa-book-open me-2 text-primary"></i>
                         Enrolled Courses
                     </h3>
-                    <div class="d-flex gap-2">
-                        <span class="badge bg-primary fs-6">
-                            <span v-text="courses.length"></span> Courses
-                        </span>
-                        <span class="badge bg-success fs-6">
-                            <span v-text="totalCourseCredits"></span> Credits
-                        </span>
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-primary" @click="showAddCourseModal">
+                            <i class="fas fa-plus me-2"></i>Add Course
+                        </button>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-primary fs-6">
+                                <span v-text="courses.length"></span> Courses
+                            </span>
+                            <span class="badge bg-success fs-6">
+                                <span v-text="totalCourseCredits"></span> Credits
+                            </span>
+                        </div>
                     </div>
                 </div>
                 
@@ -626,15 +628,7 @@
                                     <input v-model="newCourse.venue" type="text" class="form-control" required 
                                            placeholder="Enter venue">
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Slot</label>
-                                    <select v-model="newCourse.selected_slot" class="form-select" required>
-                                        <option value="">Select slot</option>
-                                        <option v-for="slot in availableSlots" :key="slot" :value="slot">
-                                            {{ slot }}
-                                        </option>
-                                    </select>
-                                </div>
+
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -708,8 +702,7 @@
                 isFormValid() {
                     return this.newCourse.course_code && 
                            this.newCourse.faculty && 
-                           this.newCourse.venue && 
-                           this.newCourse.selected_slot;
+                           this.newCourse.venue;
                 }
             },
             mounted() {
@@ -787,19 +780,13 @@
                     this.selectedTimeIndex = -1;
                 },
 
-                showAddCourseModal(day, timeIndex) {
-                    this.selectedDay = day;
-                    this.selectedTimeIndex = timeIndex;
-                    this.selectedSlot = this.timetable[day][timeIndex];
+                showAddCourseModal() {
                     this.showAddModal = true;
                     this.resetNewCourse();
                 },
 
                 closeAddModal() {
                     this.showAddModal = false;
-                    this.selectedSlot = null;
-                    this.selectedDay = '';
-                    this.selectedTimeIndex = -1;
                     this.resetNewCourse();
                 },
 
@@ -828,13 +815,10 @@
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
-                                day: this.selectedDay,
-                                time_index: this.selectedTimeIndex,
                                 course_code: this.newCourse.course_code,
                                 course_name: this.newCourse.course_name,
                                 faculty: this.newCourse.faculty,
-                                venue: this.newCourse.venue,
-                                selected_slot: this.newCourse.selected_slot
+                                venue: this.newCourse.venue
                             })
                         });
 
@@ -843,6 +827,10 @@
                             await this.fetchTimetable();
                             await this.fetchCourses();
                             this.closeAddModal();
+                            // Show success message with added slots
+                            if (result.added_slots) {
+                                alert(`Course added successfully!\nSlots assigned: ${result.added_slots.join(', ')}`);
+                            }
                         } else {
                             alert('Error adding course: ' + result.message);
                         }

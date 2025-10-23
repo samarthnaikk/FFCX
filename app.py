@@ -255,28 +255,109 @@ def get_slot_info():
 
 @app.route('/api/add-course', methods=['POST'])
 def add_course():
-    """API endpoint to add a course to a specific slot"""
+    """API endpoint to add a course and automatically assign to available slots"""
     try:
         data = request.get_json()
-        day = data.get('day')
-        time_index = data.get('time_index')
         course_code = data.get('course_code')
         course_name = data.get('course_name')
         faculty = data.get('faculty')
         venue = data.get('venue')
-        selected_slot = data.get('selected_slot')
         
-        if day in TIMETABLE_TEMPLATE and 0 <= time_index < len(TIMETABLE_TEMPLATE[day]):
-            TIMETABLE_TEMPLATE[day][time_index].update({
-                'course': course_code,
-                'name': course_name,
-                'faculty': faculty,
-                'venue': venue,
-                'slot': selected_slot
-            })
-            return jsonify({'success': True, 'message': 'Course added successfully'})
+        if not course_code or course_code not in COURSE_INFO:
+            return jsonify({'success': False, 'message': 'Invalid course code'}), 400
+        
+        course_info = COURSE_INFO[course_code]
+        course_type = course_info['type']
+        
+        # Find available slots for this course
+        added_slots = []
+        
+        # For courses with lab component, we need both theory and lab slots
+        if 'Lab' in course_type or '+' in course_type:
+            # Need to add both theory and lab sessions
+            theory_slots_needed = 2 if 'Theory + Lab' in course_type else 0
+            lab_slots_needed = 1 if 'Lab' in course_type else 0
+            
+            theory_added = 0
+            lab_added = 0
+            
+            for day in TIMETABLE_TEMPLATE:
+                for time_index, slot in enumerate(TIMETABLE_TEMPLATE[day]):
+                    if not slot['course']:  # Empty slot
+                        available_options = slot['available_slots'].split('/')
+                        
+                        # Try to add theory slot
+                        if theory_added < theory_slots_needed:
+                            for option in available_options:
+                                if not option.startswith('L') and option not in ['V1', 'V2']:  # Theory slot
+                                    TIMETABLE_TEMPLATE[day][time_index].update({
+                                        'course': course_code,
+                                        'name': course_name,
+                                        'faculty': faculty,
+                                        'venue': venue,
+                                        'slot': option
+                                    })
+                                    added_slots.append(f"{option} ({day})")
+                                    theory_added += 1
+                                    break
+                        
+                        # Try to add lab slot
+                        elif lab_added < lab_slots_needed and not slot['course']:
+                            for option in available_options:
+                                if option.startswith('L'):  # Lab slot
+                                    TIMETABLE_TEMPLATE[day][time_index].update({
+                                        'course': course_code,
+                                        'name': course_name + ' Lab',
+                                        'faculty': faculty,
+                                        'venue': venue + ' (Lab)',
+                                        'slot': option
+                                    })
+                                    added_slots.append(f"{option} ({day})")
+                                    lab_added += 1
+                                    break
+                        
+                        if theory_added >= theory_slots_needed and lab_added >= lab_slots_needed:
+                            break
+                if theory_added >= theory_slots_needed and lab_added >= lab_slots_needed:
+                    break
+                    
         else:
-            return jsonify({'success': False, 'message': 'Invalid day or time index'}), 400
+            # Theory only course
+            slots_needed = 3 if course_type == 'Theory' else 2
+            slots_added = 0
+            
+            for day in TIMETABLE_TEMPLATE:
+                for time_index, slot in enumerate(TIMETABLE_TEMPLATE[day]):
+                    if not slot['course'] and slots_added < slots_needed:  # Empty slot
+                        available_options = slot['available_slots'].split('/')
+                        
+                        for option in available_options:
+                            if not option.startswith('L') and option not in ['V1', 'V2']:  # Theory slot
+                                TIMETABLE_TEMPLATE[day][time_index].update({
+                                    'course': course_code,
+                                    'name': course_name,
+                                    'faculty': faculty,
+                                    'venue': venue,
+                                    'slot': option
+                                })
+                                added_slots.append(f"{option} ({day})")
+                                slots_added += 1
+                                break
+                        
+                        if slots_added >= slots_needed:
+                            break
+                if slots_added >= slots_needed:
+                    break
+        
+        if added_slots:
+            return jsonify({
+                'success': True, 
+                'message': f'Course added successfully to slots: {", ".join(added_slots)}',
+                'added_slots': added_slots
+            })
+        else:
+            return jsonify({'success': False, 'message': 'No available slots found for this course'}), 400
+            
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
