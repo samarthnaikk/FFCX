@@ -255,108 +255,53 @@ def get_slot_info():
 
 @app.route('/api/add-course', methods=['POST'])
 def add_course():
-    """API endpoint to add a course and automatically assign to available slots"""
+    """API endpoint to add a course to a specific slot"""
     try:
         data = request.get_json()
-        course_code = data.get('course_code')
-        course_name = data.get('course_name')
+        subject_name = data.get('subject_name')
+        slot = data.get('slot')
         faculty = data.get('faculty')
         venue = data.get('venue')
         
-        if not course_code or course_code not in COURSE_INFO:
-            return jsonify({'success': False, 'message': 'Invalid course code'}), 400
+        if not all([subject_name, slot, faculty, venue]):
+            return jsonify({'success': False, 'message': 'All fields are required'}), 400
         
-        course_info = COURSE_INFO[course_code]
-        course_type = course_info['type']
+        # Find the time slot that matches the requested slot
+        slot_found = False
         
-        # Find available slots for this course
-        added_slots = []
+        for day in TIMETABLE_TEMPLATE:
+            for time_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
+                available_options = time_slot['available_slots'].split('/')
+                
+                # Check if the requested slot is available in this time period
+                if slot in available_options:
+                    # Check if this time slot is empty
+                    if not time_slot['course']:
+                        TIMETABLE_TEMPLATE[day][time_index].update({
+                            'course': slot,  # Using slot as course identifier
+                            'name': subject_name,
+                            'faculty': faculty,
+                            'venue': venue,
+                            'slot': slot
+                        })
+                        slot_found = True
+                        return jsonify({
+                            'success': True, 
+                            'message': f'Course "{subject_name}" added successfully to slot {slot} on {day}',
+                            'day': day,
+                            'time': time_slot['time']
+                        })
+                    else:
+                        return jsonify({
+                            'success': False, 
+                            'message': f'Slot {slot} on {day} is already occupied by {time_slot["name"]}'
+                        }), 400
         
-        # For courses with lab component, we need both theory and lab slots
-        if 'Lab' in course_type or '+' in course_type:
-            # Need to add both theory and lab sessions
-            theory_slots_needed = 2 if 'Theory + Lab' in course_type else 0
-            lab_slots_needed = 1 if 'Lab' in course_type else 0
-            
-            theory_added = 0
-            lab_added = 0
-            
-            for day in TIMETABLE_TEMPLATE:
-                for time_index, slot in enumerate(TIMETABLE_TEMPLATE[day]):
-                    if not slot['course']:  # Empty slot
-                        available_options = slot['available_slots'].split('/')
-                        
-                        # Try to add theory slot
-                        if theory_added < theory_slots_needed:
-                            for option in available_options:
-                                if not option.startswith('L') and option not in ['V1', 'V2']:  # Theory slot
-                                    TIMETABLE_TEMPLATE[day][time_index].update({
-                                        'course': course_code,
-                                        'name': course_name,
-                                        'faculty': faculty,
-                                        'venue': venue,
-                                        'slot': option
-                                    })
-                                    added_slots.append(f"{option} ({day})")
-                                    theory_added += 1
-                                    break
-                        
-                        # Try to add lab slot
-                        elif lab_added < lab_slots_needed and not slot['course']:
-                            for option in available_options:
-                                if option.startswith('L'):  # Lab slot
-                                    TIMETABLE_TEMPLATE[day][time_index].update({
-                                        'course': course_code,
-                                        'name': course_name + ' Lab',
-                                        'faculty': faculty,
-                                        'venue': venue + ' (Lab)',
-                                        'slot': option
-                                    })
-                                    added_slots.append(f"{option} ({day})")
-                                    lab_added += 1
-                                    break
-                        
-                        if theory_added >= theory_slots_needed and lab_added >= lab_slots_needed:
-                            break
-                if theory_added >= theory_slots_needed and lab_added >= lab_slots_needed:
-                    break
-                    
-        else:
-            # Theory only course
-            slots_needed = 3 if course_type == 'Theory' else 2
-            slots_added = 0
-            
-            for day in TIMETABLE_TEMPLATE:
-                for time_index, slot in enumerate(TIMETABLE_TEMPLATE[day]):
-                    if not slot['course'] and slots_added < slots_needed:  # Empty slot
-                        available_options = slot['available_slots'].split('/')
-                        
-                        for option in available_options:
-                            if not option.startswith('L') and option not in ['V1', 'V2']:  # Theory slot
-                                TIMETABLE_TEMPLATE[day][time_index].update({
-                                    'course': course_code,
-                                    'name': course_name,
-                                    'faculty': faculty,
-                                    'venue': venue,
-                                    'slot': option
-                                })
-                                added_slots.append(f"{option} ({day})")
-                                slots_added += 1
-                                break
-                        
-                        if slots_added >= slots_needed:
-                            break
-                if slots_added >= slots_needed:
-                    break
-        
-        if added_slots:
+        if not slot_found:
             return jsonify({
-                'success': True, 
-                'message': f'Course added successfully to slots: {", ".join(added_slots)}',
-                'added_slots': added_slots
-            })
-        else:
-            return jsonify({'success': False, 'message': 'No available slots found for this course'}), 400
+                'success': False, 
+                'message': f'Slot {slot} is not available in any time period'
+            }), 400
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500

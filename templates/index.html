@@ -611,22 +611,24 @@
                         <div class="modal-body">
                             <form @submit.prevent="addCourse">
                                 <div class="mb-3">
-                                    <label class="form-label">Course</label>
-                                    <select v-model="newCourse.course_code" class="form-select" required @change="onCourseSelect">
-                                        <option value="">Select a course</option>
-                                        <option v-for="course in availableCourses" :key="course.code" :value="course.code" v-text="`${course.code} - ${course.name}`">
-                                        </option>
-                                    </select>
+                                    <label class="form-label">Subject Name</label>
+                                    <input v-model="newCourse.subject_name" type="text" class="form-control" required 
+                                           placeholder="Enter subject name (e.g., Data Structures, Calculus)">
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Faculty</label>
+                                    <label class="form-label">Slot</label>
+                                    <input v-model="newCourse.slot" type="text" class="form-control" required 
+                                           placeholder="Enter slot (e.g., A1, B2, L31)">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Faculty Name</label>
                                     <input v-model="newCourse.faculty" type="text" class="form-control" required 
                                            placeholder="Enter faculty name">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Venue</label>
                                     <input v-model="newCourse.venue" type="text" class="form-control" required 
-                                           placeholder="Enter venue">
+                                           placeholder="Enter venue (e.g., SJT101, AB2-201)">
                                 </div>
 
                             </form>
@@ -663,11 +665,10 @@
                     selectedTimeIndex: -1,
                     showAddModal: false,
                     newCourse: {
-                        course_code: '',
-                        course_name: '',
+                        subject_name: '',
+                        slot: '',
                         faculty: '',
-                        venue: '',
-                        selected_slot: ''
+                        venue: ''
                     },
                     totalCourses: 0,
                     totalCredits: 0,
@@ -700,7 +701,8 @@
                     return this.selectedSlot.available_slots.split('/');
                 },
                 isFormValid() {
-                    return this.newCourse.course_code && 
+                    return this.newCourse.subject_name && 
+                           this.newCourse.slot &&
                            this.newCourse.faculty && 
                            this.newCourse.venue;
                 }
@@ -792,34 +794,28 @@
 
                 resetNewCourse() {
                     this.newCourse = {
-                        course_code: '',
-                        course_name: '',
+                        subject_name: '',
+                        slot: '',
                         faculty: '',
-                        venue: '',
-                        selected_slot: ''
+                        venue: ''
                     };
                 },
 
-                onCourseSelect() {
-                    const selectedCourse = this.availableCourses.find(c => c.code === this.newCourse.course_code);
-                    if (selectedCourse) {
-                        this.newCourse.course_name = selectedCourse.name;
-                    }
-                },
+
 
                 async addCourse() {
+                    if (!this.newCourse.subject_name || !this.newCourse.slot || !this.newCourse.faculty || !this.newCourse.venue) {
+                        alert('Please fill in all fields');
+                        return;
+                    }
+
                     try {
                         const response = await fetch('/api/add-course', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({
-                                course_code: this.newCourse.course_code,
-                                course_name: this.newCourse.course_name,
-                                faculty: this.newCourse.faculty,
-                                venue: this.newCourse.venue
-                            })
+                            body: JSON.stringify(this.newCourse)
                         });
 
                         const result = await response.json();
@@ -827,10 +823,7 @@
                             await this.fetchTimetable();
                             await this.fetchCourses();
                             this.closeAddModal();
-                            // Show success message with added slots
-                            if (result.added_slots) {
-                                alert(`Course added successfully!\nSlots assigned: ${result.added_slots.join(', ')}`);
-                            }
+                            alert(result.message);
                         } else {
                             alert('Error adding course: ' + result.message);
                         }
