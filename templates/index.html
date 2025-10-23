@@ -71,6 +71,44 @@
             opacity: 0.9;
         }
         
+        .slot-info {
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .selected-slot {
+            font-size: 0.7em;
+            font-weight: bold;
+            color: #fff;
+            opacity: 1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .selected-slot i {
+            color: #28a745;
+        }
+        
+        .available-slots {
+            font-size: 0.6em;
+            opacity: 0.8;
+            font-style: italic;
+            margin-top: 2px;
+        }
+        
+        .available-slots-free {
+            font-size: 0.7em;
+            color: #6c757d;
+            font-style: italic;
+            margin-top: 2px;
+        }
+        
+        .free-period-info {
+            text-align: center;
+        }
+        
         .time-label {
             font-size: 0.7em;
             font-weight: bold;
@@ -220,6 +258,16 @@
             border: 1px solid #e9ecef;
         }
         
+        .available-text {
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: #495057;
+            font-size: 0.8em;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #d1ecf1;
+        }
+        
         .summary-item {
             padding: 0.5rem;
         }
@@ -347,12 +395,17 @@
                                 <div class="course-name" v-text="slot.name"></div>
                                 <div class="faculty-venue" v-text="slot.faculty"></div>
                                 <div class="faculty-venue" v-text="slot.venue"></div>
-                                <div class="faculty-venue" style="font-weight: bold; color: #fff; opacity: 1;">
-                                    Slot: <span v-text="slot.slot"></span>
+                                <div class="slot-info">
+                                    <div class="selected-slot">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span v-text="slot.slot"></span>
+                                    </div>
+                                    <div class="available-slots" v-text="slot.available_slots"></div>
                                 </div>
                             </div>
-                            <div v-else>
+                            <div v-else class="free-period-info">
                                 <div class="course-name">Free Period</div>
+                                <div class="available-slots-free" v-text="slot.available_slots"></div>
                             </div>
                         </div>
                     </div>
