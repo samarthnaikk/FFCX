@@ -686,9 +686,10 @@
                                                placeholder="Auto-filled">
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Slot</label>
+                                        <label class="form-label">Slot(s)</label>
                                         <input v-model="newCourse.slot" type="text" class="form-control" required 
-                                               placeholder="Enter slot (e.g., A1, B2, L31)">
+                                               placeholder="Enter slot(s) (e.g., A1, B2+L31, A1+A2)">
+                                        <small class="form-text text-muted">Use + to combine multiple slots (e.g., A1+L5 for theory+lab)</small>
                                     </div>
                                 </div>
                                 

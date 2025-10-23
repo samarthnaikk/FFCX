@@ -368,87 +368,107 @@ def debug_conflicts():
 
 @app.route('/api/add-course', methods=['POST'])
 def add_course():
-    """API endpoint to add a course to all instances of a specific slot"""
+    """API endpoint to add a course to multiple slots (e.g., A1+B1 for theory+lab)"""
     try:
         data = request.get_json()
         subject_name = data.get('subject_name')
-        slot = data.get('slot')
+        slot_input = data.get('slot', '').strip()
         faculty = data.get('faculty')
         venue = data.get('venue')
         
-        if not all([subject_name, slot, faculty, venue]):
+        if not all([subject_name, slot_input, faculty, venue]):
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
         
-        # Check for slot conflicts first
+        # Parse multiple slots separated by '+'
+        requested_slots = [s.strip().upper() for s in slot_input.split('+') if s.strip()]
+        
+        if not requested_slots:
+            return jsonify({'success': False, 'message': 'Invalid slot format. Use format like A1 or A1+B1'}), 400
+        
+        # Get currently enrolled slots
         currently_enrolled_slots = set()
         for day_schedule in TIMETABLE_TEMPLATE.values():
             for time_slot in day_schedule:
                 if time_slot['course'] and time_slot['slot']:
                     currently_enrolled_slots.add(time_slot['slot'])
         
-        # Check if the requested slot conflicts with any currently enrolled slots
-        if slot in SLOT_CONFLICTS:
-            conflicting_slots = SLOT_CONFLICTS[slot]
-            for conflict_slot in conflicting_slots:
-                if conflict_slot in currently_enrolled_slots:
+        # Check for conflicts with each requested slot
+        for slot in requested_slots:
+            # Check if requested slot conflicts with enrolled slots
+            if slot in SLOT_CONFLICTS:
+                conflicting_slots = SLOT_CONFLICTS[slot]
+                for conflict_slot in conflicting_slots:
+                    if conflict_slot in currently_enrolled_slots:
+                        return jsonify({
+                            'success': False, 
+                            'message': f'Cannot add slot {slot} because it conflicts with already enrolled slot {conflict_slot}. Lab sessions overlap with theory sessions.'
+                        }), 400
+            
+            # Check if enrolled slots conflict with this new slot
+            for enrolled_slot in currently_enrolled_slots:
+                if enrolled_slot in SLOT_CONFLICTS and slot in SLOT_CONFLICTS[enrolled_slot]:
                     return jsonify({
                         'success': False, 
-                        'message': f'Cannot add slot {slot} because it conflicts with already enrolled slot {conflict_slot}. Lab sessions overlap with theory sessions.'
+                        'message': f'Cannot add slot {slot} because enrolled slot {enrolled_slot} conflicts with it. Lab sessions overlap with theory sessions.'
                     }), 400
         
-        # Check if any currently enrolled slots would conflict with this new slot
-        for enrolled_slot in currently_enrolled_slots:
-            if enrolled_slot in SLOT_CONFLICTS and slot in SLOT_CONFLICTS[enrolled_slot]:
+        # Check availability for all requested slots
+        all_occupied_slots = []
+        all_available_slots = []
+        
+        for slot in requested_slots:
+            slot_occupied = []
+            slot_available = []
+            
+            for day in TIMETABLE_TEMPLATE:
+                for time_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
+                    available_options = time_slot['available_slots'].split('/')
+                    
+                    # Check if the requested slot is available in this time period
+                    if slot in available_options:
+                        if time_slot['course']:
+                            slot_occupied.append(f"{slot} on {day} at {time_slot['time']}")
+                        else:
+                            slot_available.append((day, time_index, time_slot, slot))
+            
+            if slot_occupied:
+                all_occupied_slots.extend(slot_occupied)
+            
+            if not slot_available:
                 return jsonify({
                     'success': False, 
-                    'message': f'Cannot add slot {slot} because enrolled slot {enrolled_slot} conflicts with it. Lab sessions overlap with theory sessions.'
+                    'message': f'Slot {slot} is not available in any time period'
                 }), 400
+            
+            all_available_slots.extend(slot_available)
         
-        # First, check if any instance of this slot is already occupied
-        occupied_slots = []
-        available_slots = []
-        
-        for day in TIMETABLE_TEMPLATE:
-            for time_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
-                available_options = time_slot['available_slots'].split('/')
-                
-                # Check if the requested slot is available in this time period
-                if slot in available_options:
-                    if time_slot['course']:
-                        occupied_slots.append(f"{day} at {time_slot['time']}")
-                    else:
-                        available_slots.append((day, time_index, time_slot))
-        
-        # If any instance is occupied, reject the request
-        if occupied_slots:
+        # If any slot instance is occupied, reject the entire request
+        if all_occupied_slots:
             return jsonify({
                 'success': False, 
-                'message': f'Slot {slot} is already occupied on: {", ".join(occupied_slots)}. Please choose a different slot.'
+                'message': f'Cannot add course. The following slots are already occupied: {", ".join(all_occupied_slots)}. Please choose different slots.'
             }), 400
         
-        # If no instances are occupied, check if slot exists at all
-        if not available_slots:
-            return jsonify({
-                'success': False, 
-                'message': f'Slot {slot} is not available in any time period'
-            }), 400
+        # Create a unique course identifier that includes all slots
+        course_id = f"{subject_name}_{'+'.join(requested_slots)}"
         
-        # Fill all available instances of this slot
+        # Fill all available instances of all requested slots
         filled_slots = []
-        for day, time_index, time_slot in available_slots:
+        for day, time_index, time_slot, slot in all_available_slots:
             TIMETABLE_TEMPLATE[day][time_index].update({
-                'course': slot,  # Using slot as course identifier
+                'course': course_id,  # Unique identifier for this multi-slot course
                 'name': subject_name,
                 'faculty': faculty,
                 'venue': venue,
-                'slot': slot
+                'slot': slot  # Individual slot for this time period
             })
-            filled_slots.append(f"{day} at {time_slot['time']}")
+            filled_slots.append(f"{slot} on {day} at {time_slot['time']}")
         
         return jsonify({
             'success': True, 
-            'message': f'Course "{subject_name}" added successfully to all {slot} slots: {", ".join(filled_slots)}',
-            'filled_slots': filled_slots
+            'message': f'Course "{subject_name}" added successfully to slots {"+".join(requested_slots)}: {", ".join(filled_slots)}',
+            'filled_slots': filled_slots,
+            'course_slots': requested_slots
         })
             
     except Exception as e:
@@ -465,20 +485,20 @@ def remove_course():
         if day not in TIMETABLE_TEMPLATE or not (0 <= time_index < len(TIMETABLE_TEMPLATE[day])):
             return jsonify({'success': False, 'message': 'Invalid day or time index'}), 400
         
-        # Get the course and slot to remove
+        # Get the course to remove
         target_slot = TIMETABLE_TEMPLATE[day][time_index]
         if not target_slot['course']:
             return jsonify({'success': False, 'message': 'No course found at this slot'}), 400
         
+        course_id = target_slot['course']  # This now includes the unique identifier
         course_name = target_slot['name']
-        slot_to_remove = target_slot['slot']
         
-        # Remove all instances of this course/slot from the timetable
+        # Remove ALL instances of this course (all slots) from the timetable
         removed_slots = []
         for day_key in TIMETABLE_TEMPLATE:
             for idx, time_slot in enumerate(TIMETABLE_TEMPLATE[day_key]):
-                if (time_slot['course'] and time_slot['slot'] == slot_to_remove and 
-                    time_slot['name'] == course_name):
+                if time_slot['course'] == course_id:  # Match by course ID (which includes all slots)
+                    removed_slots.append(f"{time_slot['slot']} on {day_key} at {time_slot['time']}")
                     TIMETABLE_TEMPLATE[day_key][idx].update({
                         'course': '',
                         'name': '',
@@ -486,12 +506,11 @@ def remove_course():
                         'venue': '',
                         'slot': ''
                     })
-                    removed_slots.append(f"{day_key} at {time_slot['time']}")
         
         if removed_slots:
             return jsonify({
                 'success': True, 
-                'message': f'Course "{course_name}" removed from all slots: {", ".join(removed_slots)}'
+                'message': f'Course "{course_name}" removed from all its slots: {", ".join(removed_slots)}'
             })
         else:
             return jsonify({'success': False, 'message': 'No matching course instances found'}), 400
