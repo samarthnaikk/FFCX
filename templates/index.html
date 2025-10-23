@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFCX - Collaborative FFCS Planner</title>
+    
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        .timetable-container {
+            margin-top: 20px;
+        }
+        
+        .time-slot {
+            min-height: 60px;
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .time-slot.occupied {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+        }
+        
+        .time-slot.occupied:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .time-slot.free {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            border-style: dashed;
+        }
+        
+        .day-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .course-code {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .course-name {
+            font-size: 0.8em;
+            margin: 2px 0;
+        }
+        
+        .faculty-venue {
+            font-size: 0.7em;
+            opacity: 0.9;
+        }
+        
+        .time-label {
+            font-size: 0.7em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .timetable-container {
+                font-size: 0.8em;
+            }
+            
+            .time-slot {
+                min-height: 50px;
+                padding: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <h1 class="display-4 mb-3">FFCX Timetable</h1>
+                        <p class="lead">Collaborative FFCS Planning for VIT Students</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Stats Section -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="stats-card text-center">
+                        <h4 class="text-primary">{{ totalCourses }}</h4>
+                        <small class="text-muted">Total Courses</small>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card text-center">
+                        <h4 class="text-success">{{ totalCredits }}</h4>
+                        <small class="text-muted">Credits</small>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card text-center">
+                        <h4 class="text-warning">{{ busyHours }}</h4>
+                        <small class="text-muted">Busy Hours</small>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card text-center">
+                        <h4 class="text-info">{{ freeHours }}</h4>
+                        <small class="text-muted">Free Hours</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    <small>Occupied</small>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f8f9fa; border: 1px dashed #dee2e6;"></div>
+                    <small>Free Period</small>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="loading" class="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading your timetable...</p>
+            </div>
+
+            <!-- Timetable -->
+            <div v-else class="timetable-container">
+                <div class="row">
+                    <div v-for="(schedule, day) in timetable" :key="day" class="col-lg-2 col-md-4 col-sm-6 mb-4">
+                        <div class="day-header">
+                            {{ day }}
+                        </div>
+                        <div v-for="(slot, index) in schedule" :key="index" 
+                             :class="['time-slot', slot.course ? 'occupied' : 'free']"
+                             @click="showSlotDetails(day, slot)"
+                             :title="slot.course ? `${slot.name} - ${slot.faculty}` : 'Free Period'">
+                            
+                            <div class="time-label">{{ slot.time }}</div>
+                            
+                            <div v-if="slot.course">
+                                <div class="course-code">{{ slot.course }}</div>
+                                <div class="course-name">{{ slot.name }}</div>
+                                <div class="faculty-venue">{{ slot.faculty }}</div>
+                                <div class="faculty-venue">{{ slot.venue }}</div>
+                            </div>
+                            <div v-else>
+                                <div class="course-name">Free Period</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Details Modal -->
+            <div v-if="selectedSlot" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @click.self="closeModal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{ selectedDay }} - {{ selectedSlot.time }}</h5>
+                            <button type="button" class="btn-close" @click="closeModal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div v-if="selectedSlot.course">
+                                <p><strong>Course Code:</strong> {{ selectedSlot.course }}</p>
+                                <p><strong>Course Name:</strong> {{ selectedSlot.name }}</p>
+                                <p><strong>Faculty:</strong> {{ selectedSlot.faculty }}</p>
+                                <p><strong>Venue:</strong> {{ selectedSlot.venue }}</p>
+                            </div>
+                            <div v-else>
+                                <p><em>This is a free period. You can use this time for:</em></p>
+                                <ul>
+                                    <li>Self-study</li>
+                                    <li>Project work</li>
+                                    <li>Group discussions</li>
+                                    <li>Library time</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Vue.js Application -->
+    <script>
+        const { createApp } = Vue;
+        
+        createApp({
+            data() {
+                return {
+                    timetable: {},
+                    loading: true,
+                    selectedSlot: null,
+                    selectedDay: '',
+                    totalCourses: 0,
+                    totalCredits: 0,
+                    busyHours: 0,
+                    freeHours: 0
+                }
+            },
+            mounted() {
+                this.fetchTimetable();
+            },
+            methods: {
+                async fetchTimetable() {
+                    try {
+                        const response = await fetch('/api/timetable');
+                        const data = await response.json();
+                        this.timetable = data;
+                        this.calculateStats();
+                        this.loading = false;
+                    } catch (error) {
+                        console.error('Error fetching timetable:', error);
+                        this.loading = false;
+                    }
+                },
+                
+                calculateStats() {
+                    let courses = new Set();
+                    let busyCount = 0;
+                    let freeCount = 0;
+                    
+                    Object.values(this.timetable).forEach(day => {
+                        day.forEach(slot => {
+                            if (slot.course) {
+                                courses.add(slot.course);
+                                busyCount++;
+                            } else {
+                                freeCount++;
+                            }
+                        });
+                    });
+                    
+                    this.totalCourses = courses.size;
+                    this.totalCredits = courses.size * 3; // Assuming 3 credits per course
+                    this.busyHours = busyCount;
+                    this.freeHours = freeCount;
+                },
+                
+                showSlotDetails(day, slot) {
+                    this.selectedDay = day;
+                    this.selectedSlot = slot;
+                },
+                
+                closeModal() {
+                    this.selectedSlot = null;
+                    this.selectedDay = '';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

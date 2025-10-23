@@ -22,7 +22,49 @@ The Fully Flexible Credit System (FFCS) is VIT's unique academic structure that 
 
 ## Getting Started
 
-[Instructions for setup and usage will be added as the project develops]
+### Prerequisites
+- Python 3.7 or higher
+- pip (Python package manager)
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/samarthnaikk/FFCX.git
+   cd FFCX
+   ```
+
+2. **Create a virtual environment (recommended):**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Running the Application
+
+1. **Start the Flask server:**
+   ```bash
+   python app.py
+   ```
+
+2. **Open your browser and navigate to:**
+   ```
+   http://localhost:5000
+   ```
+
+The application will display an interactive timetable with sample FFCS data. You can click on any time slot to view detailed course information.
+
+### Features Currently Available
+- Interactive timetable display
+- Course statistics dashboard
+- Responsive design for mobile and desktop
+- Click-to-view course details
+- Sample VIT FFCS data
 
 ## Contributing
 
