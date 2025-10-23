@@ -255,7 +255,7 @@ def get_slot_info():
 
 @app.route('/api/add-course', methods=['POST'])
 def add_course():
-    """API endpoint to add a course to a specific slot"""
+    """API endpoint to add a course to all instances of a specific slot"""
     try:
         data = request.get_json()
         subject_name = data.get('subject_name')
@@ -266,8 +266,9 @@ def add_course():
         if not all([subject_name, slot, faculty, venue]):
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
         
-        # Find the time slot that matches the requested slot
-        slot_found = False
+        # First, check if any instance of this slot is already occupied
+        occupied_slots = []
+        available_slots = []
         
         for day in TIMETABLE_TEMPLATE:
             for time_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
@@ -275,56 +276,88 @@ def add_course():
                 
                 # Check if the requested slot is available in this time period
                 if slot in available_options:
-                    # Check if this time slot is empty
-                    if not time_slot['course']:
-                        TIMETABLE_TEMPLATE[day][time_index].update({
-                            'course': slot,  # Using slot as course identifier
-                            'name': subject_name,
-                            'faculty': faculty,
-                            'venue': venue,
-                            'slot': slot
-                        })
-                        slot_found = True
-                        return jsonify({
-                            'success': True, 
-                            'message': f'Course "{subject_name}" added successfully to slot {slot} on {day}',
-                            'day': day,
-                            'time': time_slot['time']
-                        })
+                    if time_slot['course']:
+                        occupied_slots.append(f"{day} at {time_slot['time']}")
                     else:
-                        return jsonify({
-                            'success': False, 
-                            'message': f'Slot {slot} on {day} is already occupied by {time_slot["name"]}'
-                        }), 400
+                        available_slots.append((day, time_index, time_slot))
         
-        if not slot_found:
+        # If any instance is occupied, reject the request
+        if occupied_slots:
+            return jsonify({
+                'success': False, 
+                'message': f'Slot {slot} is already occupied on: {", ".join(occupied_slots)}. Please choose a different slot.'
+            }), 400
+        
+        # If no instances are occupied, check if slot exists at all
+        if not available_slots:
             return jsonify({
                 'success': False, 
                 'message': f'Slot {slot} is not available in any time period'
             }), 400
+        
+        # Fill all available instances of this slot
+        filled_slots = []
+        for day, time_index, time_slot in available_slots:
+            TIMETABLE_TEMPLATE[day][time_index].update({
+                'course': slot,  # Using slot as course identifier
+                'name': subject_name,
+                'faculty': faculty,
+                'venue': venue,
+                'slot': slot
+            })
+            filled_slots.append(f"{day} at {time_slot['time']}")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Course "{subject_name}" added successfully to all {slot} slots: {", ".join(filled_slots)}',
+            'filled_slots': filled_slots
+        })
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/remove-course', methods=['POST'])
 def remove_course():
-    """API endpoint to remove a course from a specific slot"""
+    """API endpoint to remove all instances of a course from the timetable"""
     try:
         data = request.get_json()
         day = data.get('day')
         time_index = data.get('time_index')
         
-        if day in TIMETABLE_TEMPLATE and 0 <= time_index < len(TIMETABLE_TEMPLATE[day]):
-            TIMETABLE_TEMPLATE[day][time_index].update({
-                'course': '',
-                'name': '',
-                'faculty': '',
-                'venue': '',
-                'slot': ''
-            })
-            return jsonify({'success': True, 'message': 'Course removed successfully'})
-        else:
+        if day not in TIMETABLE_TEMPLATE or not (0 <= time_index < len(TIMETABLE_TEMPLATE[day])):
             return jsonify({'success': False, 'message': 'Invalid day or time index'}), 400
+        
+        # Get the course and slot to remove
+        target_slot = TIMETABLE_TEMPLATE[day][time_index]
+        if not target_slot['course']:
+            return jsonify({'success': False, 'message': 'No course found at this slot'}), 400
+        
+        course_name = target_slot['name']
+        slot_to_remove = target_slot['slot']
+        
+        # Remove all instances of this course/slot from the timetable
+        removed_slots = []
+        for day_key in TIMETABLE_TEMPLATE:
+            for idx, time_slot in enumerate(TIMETABLE_TEMPLATE[day_key]):
+                if (time_slot['course'] and time_slot['slot'] == slot_to_remove and 
+                    time_slot['name'] == course_name):
+                    TIMETABLE_TEMPLATE[day_key][idx].update({
+                        'course': '',
+                        'name': '',
+                        'faculty': '',
+                        'venue': '',
+                        'slot': ''
+                    })
+                    removed_slots.append(f"{day_key} at {time_slot['time']}")
+        
+        if removed_slots:
+            return jsonify({
+                'success': True, 
+                'message': f'Course "{course_name}" removed from all slots: {", ".join(removed_slots)}'
+            })
+        else:
+            return jsonify({'success': False, 'message': 'No matching course instances found'}), 400
+            
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
