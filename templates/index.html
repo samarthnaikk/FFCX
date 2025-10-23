@@ -135,12 +135,38 @@
         }
         
         .time-label {
-            font-size: 0.7em;
-            font-weight: bold;
+            font-size: 0.65em;
+            font-weight: 600;
             color: #495057;
+            margin-bottom: 8px;
+            padding: 2px 6px;
+            background-color: rgba(248, 249, 250, 0.8);
+            border-radius: 4px;
+            text-align: center;
         }
         
-        .header-section {
+        .time-label-compact {
+            font-size: 0.55em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .theory-time {
+            color: #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+        }
+        
+        .lab-time {
+            color: #28a745;
+            background-color: rgba(40, 167, 69, 0.1);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-style: italic;
+        }        .header-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px 0;
@@ -410,7 +436,10 @@
                              @click="showSlotDetails(day, slot, index)"
                              :title="slot.course ? `${slot.name} - ${slot.faculty}` : 'Free Period'">
                             
-                            <div class="time-label" v-text="slot.time"></div>
+                            <div class="time-label-compact">
+                                <div class="theory-time" v-text="slot.theory_time"></div>
+                                <div class="lab-time" v-text="slot.lab_time"></div>
+                            </div>
                             
                             <div v-if="slot.course">
                                 <div class="course-code" v-text="slot.course"></div>
