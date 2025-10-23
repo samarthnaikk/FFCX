@@ -192,7 +192,7 @@
             <!-- Timetable -->
             <div v-else class="timetable-container">
                 <div class="row">
-                    <div v-for="(schedule, day) in timetable" :key="day" class="col-lg-2 col-md-4 col-sm-6 mb-4">
+                    <div v-for="(schedule, day) in orderedTimetable" :key="day" class="col-lg-2 col-md-4 col-sm-6 mb-4">
                         <div class="day-header" v-text="day">
                         </div>
                         <div v-for="(slot, index) in schedule" :key="index" 
@@ -269,7 +269,19 @@
                     totalCourses: 0,
                     totalCredits: 0,
                     busyHours: 0,
-                    freeHours: 0
+                    freeHours: 0,
+                    dayOrder: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                }
+            },
+            computed: {
+                orderedTimetable() {
+                    const ordered = {};
+                    this.dayOrder.forEach(day => {
+                        if (this.timetable[day]) {
+                            ordered[day] = this.timetable[day];
+                        }
+                    });
+                    return ordered;
                 }
             },
             mounted() {
