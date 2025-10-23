@@ -252,6 +252,7 @@ def get_courses():
     
     # Build course list with details
     for course_code in enrolled_courses:
+        # Handle both predefined courses and manually added courses
         if course_code in COURSE_INFO:
             course_data = {
                 "course_code": course_code,
@@ -263,19 +264,35 @@ def get_courses():
                 "venue": "",
                 "available_slots": []
             }
+        else:
+            # For manually added courses, use the subject name and slot info from timetable
+            course_data = {
+                "course_code": course_code,
+                "name": "",  # Will be filled from timetable data
+                "credits": 0,  # Unknown for manually added courses
+                "type": "Unknown",
+                "slots": [],
+                "faculty": "",
+                "venue": "",
+                "available_slots": []
+            }
             
-            # Collect slots and faculty info for this course
-            for day, day_schedule in TIMETABLE_TEMPLATE.items():
-                for slot in day_schedule:
-                    if slot['course'] == course_code:
-                        course_data["slots"].append(f"{slot['slot']} ({day[:3]})")
-                        course_data["available_slots"].append(f"{slot['available_slots']} ({day[:3]})")
-                        if not course_data["faculty"]:
-                            course_data["faculty"] = slot['faculty']
-            
-            course_data["slots"] = ", ".join(course_data["slots"])
-            course_data["available_slots"] = ", ".join(course_data["available_slots"])
-            courses.append(course_data)
+        # Collect slots and faculty info for this course
+        for day, day_schedule in TIMETABLE_TEMPLATE.items():
+            for slot in day_schedule:
+                if slot['course'] == course_code:
+                    course_data["slots"].append(f"{slot['slot']} ({day[:3]})")
+                    course_data["available_slots"].append(f"{slot['available_slots']} ({day[:3]})")
+                    if not course_data["faculty"]:
+                        course_data["faculty"] = slot['faculty']
+                    if not course_data["name"] and slot['name']:
+                        course_data["name"] = slot['name']
+                    if not course_data["venue"]:
+                        course_data["venue"] = slot['venue']
+        
+        course_data["slots"] = ", ".join(course_data["slots"])
+        course_data["available_slots"] = ", ".join(course_data["available_slots"])
+        courses.append(course_data)
     
     return jsonify(courses)
 
