@@ -109,6 +109,31 @@
             text-align: center;
         }
         
+        .add-course-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        
+        .add-course-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .add-course-btn i {
+            font-size: 1.1em;
+        }
+        
         .time-label {
             font-size: 0.7em;
             font-weight: bold;
@@ -382,7 +407,7 @@
                         </div>
                         <div v-for="(slot, index) in schedule" :key="index" 
                              :class="['time-slot', slot.course ? 'occupied' : 'free']"
-                             @click="showSlotDetails(day, slot)"
+                             @click="showSlotDetails(day, slot, index)"
                              :title="slot.course ? `${slot.name} - ${slot.faculty}` : 'Free Period'">
                             
                             <div class="time-label" v-text="slot.time"></div>
@@ -401,7 +426,10 @@
                                 </div>
                             </div>
                             <div v-else class="free-period-info">
-                                <div class="course-name">Free Period</div>
+                                <div class="add-course-btn" @click="showAddCourseModal(day, index)">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <span>Add Course</span>
+                                </div>
                                 <div class="available-slots-free" v-text="slot.available_slots"></div>
                             </div>
                         </div>
@@ -559,7 +587,61 @@
                             </div>
                         </div>
                         <div class="modal-footer">
+                            <button v-if="selectedSlot.course" type="button" class="btn btn-danger me-2" @click="removeCourse">
+                                <i class="fas fa-trash"></i> Remove Course
+                            </button>
                             <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Course Modal -->
+            <div v-if="showAddModal" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @click.self="closeAddModal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-plus-circle me-2"></i>Add Course
+                            </h5>
+                            <button type="button" class="btn-close" @click="closeAddModal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form @submit.prevent="addCourse">
+                                <div class="mb-3">
+                                    <label class="form-label">Course</label>
+                                    <select v-model="newCourse.course_code" class="form-select" required @change="onCourseSelect">
+                                        <option value="">Select a course</option>
+                                        <option v-for="course in availableCourses" :key="course.code" :value="course.code" v-text="`${course.code} - ${course.name}`">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Faculty</label>
+                                    <input v-model="newCourse.faculty" type="text" class="form-control" required 
+                                           placeholder="Enter faculty name">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Venue</label>
+                                    <input v-model="newCourse.venue" type="text" class="form-control" required 
+                                           placeholder="Enter venue">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Slot</label>
+                                    <select v-model="newCourse.selected_slot" class="form-select" required>
+                                        <option value="">Select slot</option>
+                                        <option v-for="slot in availableSlots" :key="slot" :value="slot">
+                                            {{ slot }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @click="closeAddModal">Cancel</button>
+                            <button type="button" class="btn btn-primary" @click="addCourse" :disabled="!isFormValid">
+                                <i class="fas fa-plus"></i> Add Course
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -579,10 +661,20 @@
                 return {
                     timetable: {},
                     courses: [],
+                    availableCourses: [],
                     loading: true,
                     loadingCourses: true,
                     selectedSlot: null,
                     selectedDay: '',
+                    selectedTimeIndex: -1,
+                    showAddModal: false,
+                    newCourse: {
+                        course_code: '',
+                        course_name: '',
+                        faculty: '',
+                        venue: '',
+                        selected_slot: ''
+                    },
                     totalCourses: 0,
                     totalCredits: 0,
                     busyHours: 0,
@@ -608,11 +700,22 @@
                 },
                 labCourses() {
                     return this.courses.filter(course => course.type.includes('Lab')).length;
+                },
+                availableSlots() {
+                    if (!this.selectedSlot) return [];
+                    return this.selectedSlot.available_slots.split('/');
+                },
+                isFormValid() {
+                    return this.newCourse.course_code && 
+                           this.newCourse.faculty && 
+                           this.newCourse.venue && 
+                           this.newCourse.selected_slot;
                 }
             },
             mounted() {
                 this.fetchTimetable();
                 this.fetchCourses();
+                this.fetchAvailableCourses();
             },
             methods: {
                 async fetchTimetable() {
@@ -639,6 +742,16 @@
                         this.loadingCourses = false;
                     }
                 },
+
+                async fetchAvailableCourses() {
+                    try {
+                        const response = await fetch('/api/available-courses');
+                        const data = await response.json();
+                        this.availableCourses = data;
+                    } catch (error) {
+                        console.error('Error fetching available courses:', error);
+                    }
+                },
                 
                 calculateStats() {
                     let courses = new Set();
@@ -662,14 +775,108 @@
                     this.freeHours = freeCount;
                 },
                 
-                showSlotDetails(day, slot) {
+                showSlotDetails(day, slot, index = -1) {
                     this.selectedDay = day;
                     this.selectedSlot = slot;
+                    this.selectedTimeIndex = index;
                 },
                 
                 closeModal() {
                     this.selectedSlot = null;
                     this.selectedDay = '';
+                    this.selectedTimeIndex = -1;
+                },
+
+                showAddCourseModal(day, timeIndex) {
+                    this.selectedDay = day;
+                    this.selectedTimeIndex = timeIndex;
+                    this.selectedSlot = this.timetable[day][timeIndex];
+                    this.showAddModal = true;
+                    this.resetNewCourse();
+                },
+
+                closeAddModal() {
+                    this.showAddModal = false;
+                    this.selectedSlot = null;
+                    this.selectedDay = '';
+                    this.selectedTimeIndex = -1;
+                    this.resetNewCourse();
+                },
+
+                resetNewCourse() {
+                    this.newCourse = {
+                        course_code: '',
+                        course_name: '',
+                        faculty: '',
+                        venue: '',
+                        selected_slot: ''
+                    };
+                },
+
+                onCourseSelect() {
+                    const selectedCourse = this.availableCourses.find(c => c.code === this.newCourse.course_code);
+                    if (selectedCourse) {
+                        this.newCourse.course_name = selectedCourse.name;
+                    }
+                },
+
+                async addCourse() {
+                    try {
+                        const response = await fetch('/api/add-course', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                day: this.selectedDay,
+                                time_index: this.selectedTimeIndex,
+                                course_code: this.newCourse.course_code,
+                                course_name: this.newCourse.course_name,
+                                faculty: this.newCourse.faculty,
+                                venue: this.newCourse.venue,
+                                selected_slot: this.newCourse.selected_slot
+                            })
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            await this.fetchTimetable();
+                            await this.fetchCourses();
+                            this.closeAddModal();
+                        } else {
+                            alert('Error adding course: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error adding course:', error);
+                        alert('Error adding course');
+                    }
+                },
+
+                async removeCourse() {
+                    try {
+                        const response = await fetch('/api/remove-course', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                day: this.selectedDay,
+                                time_index: this.selectedTimeIndex
+                            })
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            await this.fetchTimetable();
+                            await this.fetchCourses();
+                            this.closeModal();
+                        } else {
+                            alert('Error removing course: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error removing course:', error);
+                        alert('Error removing course');
+                    }
                 }
             }
         }).mount('#app');

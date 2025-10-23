@@ -1,69 +1,69 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import json
 
 app = Flask(__name__)
 
-# VIT FFCS Timetable Data based on actual slot structure
-SAMPLE_TIMETABLE = {
+# Empty VIT FFCS Timetable Template - users can add/remove courses
+TIMETABLE_TEMPLATE = {
     "Monday": [
-        {"time": "08:00-08:50", "course": "CSE2001", "name": "Computer Programming", "faculty": "Dr. Smith", "venue": "SJT101", "slot": "A1", "available_slots": "A1/L1"},
-        {"time": "09:00-09:50", "course": "CSE2004", "name": "Data Structures", "faculty": "Dr. Wilson", "venue": "SJT102", "slot": "F1", "available_slots": "F1/L2"},
-        {"time": "10:00-10:50", "course": "PHY2006", "name": "Physics", "faculty": "Dr. Taylor", "venue": "AB1-202", "slot": "D1", "available_slots": "D1/L3"},
-        {"time": "11:00-11:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TB1/L4"},
-        {"time": "12:00-12:50", "course": "MAT2001", "name": "Calculus", "faculty": "Prof. Johnson", "venue": "AB2-101", "slot": "TG1", "available_slots": "TG1/L5"},
-        {"time": "14:00-14:50", "course": "CSE2048", "name": "Programming Lab", "faculty": "Dr. Smith", "venue": "SJT-Lab1", "slot": "L31", "available_slots": "A2/L31"},
-        {"time": "15:00-15:50", "course": "ENG1901", "name": "Technical English", "faculty": "Ms. Davis", "venue": "MB-205", "slot": "F2", "available_slots": "F2/L32"},
-        {"time": "16:00-16:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "D2/L33"},
-        {"time": "17:00-17:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TB2/L34"},
-        {"time": "18:00-18:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TG2/L35"}
+        {"time": "08:00-08:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "A1/L1"},
+        {"time": "09:00-09:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "F1/L2"},
+        {"time": "10:00-10:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "D1/L3"},
+        {"time": "11:00-11:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TB1/L4"},
+        {"time": "12:00-12:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TG1/L5"},
+        {"time": "14:00-14:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "A2/L31"},
+        {"time": "15:00-15:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "F2/L32"},
+        {"time": "16:00-16:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "D2/L33"},
+        {"time": "17:00-17:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TB2/L34"},
+        {"time": "18:00-18:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TG2/L35"}
     ],
     "Tuesday": [
-        {"time": "08:00-08:50", "course": "PHY2006", "name": "Physics", "faculty": "Dr. Taylor", "venue": "AB1-202", "slot": "B1", "available_slots": "B1/L7"},
-        {"time": "09:00-09:50", "course": "CSE2004", "name": "Data Structures", "faculty": "Dr. Wilson", "venue": "SJT102", "slot": "G1", "available_slots": "G1/L8"},
-        {"time": "10:00-10:50", "course": "MAT2001", "name": "Calculus", "faculty": "Prof. Johnson", "venue": "AB2-101", "slot": "E1", "available_slots": "E1/L9"},
-        {"time": "11:00-11:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TC1/L10"},
-        {"time": "12:00-12:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TAA1/L11"},
-        {"time": "14:00-14:50", "course": "CSE2001", "name": "Computer Programming", "faculty": "Dr. Smith", "venue": "SJT101", "slot": "B2", "available_slots": "B2/L37"},
-        {"time": "15:00-15:50", "course": "PHY2048", "name": "Physics Lab", "faculty": "Dr. Brown", "venue": "PHY-Lab1", "slot": "L38", "available_slots": "G2/L38"},
-        {"time": "16:00-16:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "E2/L39"},
-        {"time": "17:00-17:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TC2/L40"},
-        {"time": "18:00-18:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TAA2/L41"}
+        {"time": "08:00-08:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "B1/L7"},
+        {"time": "09:00-09:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "G1/L8"},
+        {"time": "10:00-10:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "E1/L9"},
+        {"time": "11:00-11:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TC1/L10"},
+        {"time": "12:00-12:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TAA1/L11"},
+        {"time": "14:00-14:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "B2/L37"},
+        {"time": "15:00-15:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "G2/L38"},
+        {"time": "16:00-16:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "E2/L39"},
+        {"time": "17:00-17:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TC2/L40"},
+        {"time": "18:00-18:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TAA2/L41"}
     ],
     "Wednesday": [
-        {"time": "08:00-08:50", "course": "MAT2001", "name": "Calculus", "faculty": "Prof. Johnson", "venue": "AB2-101", "slot": "C1", "available_slots": "C1/L13"},
-        {"time": "09:00-09:50", "course": "CSE2001", "name": "Computer Programming", "faculty": "Dr. Smith", "venue": "SJT101", "slot": "A1", "available_slots": "A1/L14"},
-        {"time": "10:00-10:50", "course": "CSE2004", "name": "Data Structures", "faculty": "Dr. Wilson", "venue": "SJT102", "slot": "F1", "available_slots": "F1/L15"},
-        {"time": "11:00-11:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "V1/L16"},
-        {"time": "12:00-12:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "V2/L17"},
-        {"time": "14:00-14:50", "course": "ENG1901", "name": "Technical English", "faculty": "Ms. Davis", "venue": "MB-205", "slot": "C2", "available_slots": "C2/L43"},
-        {"time": "15:00-15:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "A2/L44"},
-        {"time": "16:00-16:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "F2/L45"},
-        {"time": "17:00-17:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TD2/L46"},
-        {"time": "18:00-18:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TBB2/L47"}
+        {"time": "08:00-08:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "C1/L13"},
+        {"time": "09:00-09:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "A1/L14"},
+        {"time": "10:00-10:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "F1/L15"},
+        {"time": "11:00-11:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "V1/L16"},
+        {"time": "12:00-12:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "V2/L17"},
+        {"time": "14:00-14:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "C2/L43"},
+        {"time": "15:00-15:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "A2/L44"},
+        {"time": "16:00-16:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "F2/L45"},
+        {"time": "17:00-17:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TD2/L46"},
+        {"time": "18:00-18:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TBB2/L47"}
     ],
     "Thursday": [
-        {"time": "08:00-08:50", "course": "PHY2006", "name": "Physics", "faculty": "Dr. Taylor", "venue": "AB1-202", "slot": "D1", "available_slots": "D1/L19"},
-        {"time": "09:00-09:50", "course": "PHY2006", "name": "Physics", "faculty": "Dr. Taylor", "venue": "AB1-202", "slot": "B1", "available_slots": "B1/L20"},
-        {"time": "10:00-10:50", "course": "CSE2004", "name": "Data Structures", "faculty": "Dr. Wilson", "venue": "SJT102", "slot": "G1", "available_slots": "G1/L21"},
-        {"time": "11:00-11:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TE1/L22"},
-        {"time": "12:00-12:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TCC1/L23"},
-        {"time": "14:00-14:50", "course": "MAT2001", "name": "Calculus", "faculty": "Prof. Johnson", "venue": "AB2-101", "slot": "D2", "available_slots": "D2/L49"},
-        {"time": "15:00-15:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "B2/L50"},
-        {"time": "16:00-16:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "G2/L51"},
-        {"time": "17:00-17:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TE2/L52"},
-        {"time": "18:00-18:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TCC2/L53"}
+        {"time": "08:00-08:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "D1/L19"},
+        {"time": "09:00-09:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "B1/L20"},
+        {"time": "10:00-10:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "G1/L21"},
+        {"time": "11:00-11:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TE1/L22"},
+        {"time": "12:00-12:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TCC1/L23"},
+        {"time": "14:00-14:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "D2/L49"},
+        {"time": "15:00-15:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "B2/L50"},
+        {"time": "16:00-16:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "G2/L51"},
+        {"time": "17:00-17:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TE2/L52"},
+        {"time": "18:00-18:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TCC2/L53"}
     ],
     "Friday": [
-        {"time": "08:00-08:50", "course": "MAT2001", "name": "Calculus", "faculty": "Prof. Johnson", "venue": "AB2-101", "slot": "E1", "available_slots": "E1/L25"},
-        {"time": "09:00-09:50", "course": "ENG1901", "name": "Technical English", "faculty": "Ms. Davis", "venue": "MB-205", "slot": "C1", "available_slots": "C1/L26"},
-        {"time": "10:00-10:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TA1/L27"},
-        {"time": "11:00-11:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TF1/L28"},
-        {"time": "12:00-12:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TD1/L29"},
-        {"time": "14:00-14:50", "course": "CSE2048", "name": "Programming Lab", "faculty": "Dr. Smith", "venue": "SJT-Lab1", "slot": "L55", "available_slots": "E2/L55"},
-        {"time": "15:00-15:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "C2/L56"},
-        {"time": "16:00-16:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TA2/L57"},
-        {"time": "17:00-17:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TF2/L58"},
-        {"time": "18:00-18:50", "course": "", "name": "Free Period", "faculty": "", "venue": "", "slot": "", "available_slots": "TDD2/L59"}
+        {"time": "08:00-08:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "E1/L25"},
+        {"time": "09:00-09:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "C1/L26"},
+        {"time": "10:00-10:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TA1/L27"},
+        {"time": "11:00-11:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TF1/L28"},
+        {"time": "12:00-12:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TD1/L29"},
+        {"time": "14:00-14:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "E2/L55"},
+        {"time": "15:00-15:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "C2/L56"},
+        {"time": "16:00-16:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TA2/L57"},
+        {"time": "17:00-17:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TF2/L58"},
+        {"time": "18:00-18:50", "course": "", "name": "", "faculty": "", "venue": "", "slot": "", "available_slots": "TDD2/L59"}
     ]
 }
 
@@ -149,12 +149,12 @@ def index():
 @app.route('/api/timetable')
 def get_timetable():
     """API endpoint to get timetable data"""
-    return jsonify(SAMPLE_TIMETABLE)
+    return jsonify(TIMETABLE_TEMPLATE)
 
 @app.route('/api/timetable/<day>')
 def get_day_timetable(day):
     """API endpoint to get timetable for a specific day"""
-    day_schedule = SAMPLE_TIMETABLE.get(day.capitalize(), [])
+    day_schedule = TIMETABLE_TEMPLATE.get(day.capitalize(), [])
     return jsonify(day_schedule)
 
 @app.route('/api/courses')
@@ -165,7 +165,7 @@ def get_courses():
     enrolled_slots = set()
     
     # Collect all enrolled courses and slots from timetable
-    for day_schedule in SAMPLE_TIMETABLE.values():
+    for day_schedule in TIMETABLE_TEMPLATE.values():
         for slot in day_schedule:
             if slot['course']:
                 enrolled_courses.add(slot['course'])
@@ -187,7 +187,7 @@ def get_courses():
             }
             
             # Collect slots and faculty info for this course
-            for day, day_schedule in SAMPLE_TIMETABLE.items():
+            for day, day_schedule in TIMETABLE_TEMPLATE.items():
                 for slot in day_schedule:
                     if slot['course'] == course_code:
                         course_data["slots"].append(f"{slot['slot']} ({day[:3]})")
@@ -208,7 +208,7 @@ def validate_slots():
     conflicts = []
     
     # Collect all enrolled slots
-    for day_schedule in SAMPLE_TIMETABLE.values():
+    for day_schedule in TIMETABLE_TEMPLATE.values():
         for slot in day_schedule:
             if slot['course'] and slot['slot']:
                 enrolled_slots.add(slot['slot'])
@@ -236,7 +236,7 @@ def get_slot_info():
     """API endpoint to get complete slot information and availability"""
     slot_info = {}
     
-    for day, day_schedule in SAMPLE_TIMETABLE.items():
+    for day, day_schedule in TIMETABLE_TEMPLATE.items():
         slot_info[day] = []
         for time_slot in day_schedule:
             slot_data = {
@@ -252,6 +252,68 @@ def get_slot_info():
             slot_info[day].append(slot_data)
     
     return jsonify(slot_info)
+
+@app.route('/api/add-course', methods=['POST'])
+def add_course():
+    """API endpoint to add a course to a specific slot"""
+    try:
+        data = request.get_json()
+        day = data.get('day')
+        time_index = data.get('time_index')
+        course_code = data.get('course_code')
+        course_name = data.get('course_name')
+        faculty = data.get('faculty')
+        venue = data.get('venue')
+        selected_slot = data.get('selected_slot')
+        
+        if day in TIMETABLE_TEMPLATE and 0 <= time_index < len(TIMETABLE_TEMPLATE[day]):
+            TIMETABLE_TEMPLATE[day][time_index].update({
+                'course': course_code,
+                'name': course_name,
+                'faculty': faculty,
+                'venue': venue,
+                'slot': selected_slot
+            })
+            return jsonify({'success': True, 'message': 'Course added successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid day or time index'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/remove-course', methods=['POST'])
+def remove_course():
+    """API endpoint to remove a course from a specific slot"""
+    try:
+        data = request.get_json()
+        day = data.get('day')
+        time_index = data.get('time_index')
+        
+        if day in TIMETABLE_TEMPLATE and 0 <= time_index < len(TIMETABLE_TEMPLATE[day]):
+            TIMETABLE_TEMPLATE[day][time_index].update({
+                'course': '',
+                'name': '',
+                'faculty': '',
+                'venue': '',
+                'slot': ''
+            })
+            return jsonify({'success': True, 'message': 'Course removed successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid day or time index'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/available-courses')
+def get_available_courses():
+    """API endpoint to get list of available courses"""
+    available_courses = []
+    for course_code, course_info in COURSE_INFO.items():
+        available_courses.append({
+            'code': course_code,
+            'name': course_info['name'],
+            'credits': course_info['credits'],
+            'type': course_info['type']
+        })
+    return jsonify(available_courses)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
