@@ -30,14 +30,23 @@
         }
         
         .time-slot.occupied {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             cursor: pointer;
+            color: #333;
+        }
+        
+        .time-slot.occupied.theory-slot {
+            background-color: rgba(0, 123, 255, 0.1);
+            border-left: 4px solid #007bff;
+        }
+        
+        .time-slot.occupied.lab-slot {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left: 4px solid #28a745;
         }
         
         .time-slot.occupied:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         
         .time-slot.free {
@@ -85,6 +94,16 @@
             display: flex;
             align-items: center;
             gap: 4px;
+        }
+        
+        .time-slot.occupied.lab-slot .selected-slot span {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .time-slot.occupied.theory-slot .selected-slot span {
+            color: #007bff;
+            font-weight: bold;
         }
         
         .selected-slot i {
@@ -287,7 +306,7 @@
         }
         
         .lab-badge {
-            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
         }
         
@@ -408,8 +427,12 @@
             <!-- Legend -->
             <div class="legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                    <small>Occupied</small>
+                    <div class="legend-color" style="background-color: rgba(0, 123, 255, 0.1); border-left: 4px solid #007bff;"></div>
+                    <small>Theory</small>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: rgba(40, 167, 69, 0.1); border-left: 4px solid #28a745;"></div>
+                    <small>Lab</small>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #f8f9fa; border: 1px dashed #dee2e6;"></div>
@@ -432,7 +455,7 @@
                         <div class="day-header" v-text="day">
                         </div>
                         <div v-for="(slot, index) in schedule" :key="index" 
-                             :class="['time-slot', slot.course ? 'occupied' : 'free']"
+                             :class="['time-slot', slot.course ? 'occupied' : 'free', slot.course && slot.slot && slot.slot.startsWith('L') ? 'lab-slot' : 'theory-slot']"
                              @click="showSlotDetails(day, slot, index)"
                              :title="slot.course ? `${slot.name} - ${slot.faculty}` : 'Free Period'">
                             
@@ -449,7 +472,7 @@
                                 <div class="slot-info">
                                     <div class="selected-slot">
                                         <i class="fas fa-check-circle"></i>
-                                        <span v-text="slot.slot"></span>
+                                        <span v-text="slot.slot" :style="{color: slot.slot && slot.slot.startsWith('L') ? '#28a745' : '#007bff'}"></span>
                                     </div>
                                     <div class="available-slots" v-text="slot.available_slots"></div>
                                 </div>
@@ -470,19 +493,9 @@
                         <i class="fas fa-book-open me-2 text-primary"></i>
                         Enrolled Courses
                     </h3>
-                    <div class="d-flex align-items-center gap-3">
-                        <button class="btn btn-primary" @click="showAddCourseModal">
-                            <i class="fas fa-plus me-2"></i>Add Course
-                        </button>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-primary fs-6">
-                                <span v-text="courses.length"></span> Courses
-                            </span>
-                            <span class="badge bg-success fs-6">
-                                <span v-text="totalCourseCredits"></span> Credits
-                            </span>
-                        </div>
-                    </div>
+                    <button class="btn btn-primary btn-sm rounded-circle" @click="showAddCourseModal" title="Add Course">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
                 
                 <div v-if="loadingCourses" class="text-center py-5">
@@ -558,34 +571,6 @@
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer bg-light border-0">
-                        <div class="row text-center">
-                            <div class="col-md-3 col-6">
-                                <div class="summary-item">
-                                    <h5 class="text-primary mb-1" v-text="courses.length"></h5>
-                                    <small class="text-muted">Total Courses</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="summary-item">
-                                    <h5 class="text-success mb-1" v-text="totalCourseCredits"></h5>
-                                    <small class="text-muted">Total Credits</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="summary-item">
-                                    <h5 class="text-info mb-1" v-text="theoryCourses"></h5>
-                                    <small class="text-muted">Theory Courses</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="summary-item">
-                                    <h5 class="text-warning mb-1" v-text="labCourses"></h5>
-                                    <small class="text-muted">Lab Courses</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -605,7 +590,7 @@
                                 <p><strong>Course Name:</strong> <span v-text="selectedSlot.name"></span></p>
                                 <p><strong>Faculty:</strong> <span v-text="selectedSlot.faculty"></span></p>
                                 <p><strong>Venue:</strong> <span v-text="selectedSlot.venue"></span></p>
-                                <p><strong>Slot:</strong> <span v-text="selectedSlot.slot"></span></p>
+                                <p><strong>Slot:</strong> <span v-text="selectedSlot.slot" :style="{color: selectedSlot.slot && selectedSlot.slot.startsWith('L') ? '#28a745' : '#007bff', fontWeight: 'bold'}"></span></p>
                             </div>
                             <div v-else>
                                 <p><em>This is a free period. You can use this time for:</em></p>
