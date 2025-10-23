@@ -423,7 +423,7 @@
                 </div>
                 <div class="col-md-3 col-6">
                     <div class="stats-card text-center">
-                        <h4 class="text-success" v-text="totalCredits"></h4>
+                        <h4 class="text-success" v-text="totalCourseCredits"></h4>
                         <small class="text-muted">Credits</small>
                     </div>
                 </div>
@@ -474,7 +474,7 @@
                         <div v-for="(slot, index) in schedule" :key="index" 
                              :class="['time-slot', slot.course ? 'occupied' : 'free', slot.course && slot.slot && slot.slot.startsWith('L') ? 'lab-slot' : 'theory-slot']"
                              @click="showSlotDetails(day, slot, index)"
-                             :title="slot.course ? `${slot.name} - ${slot.faculty}` : 'Free Period'">
+                             :title="slot.course ? `${slot.name} - ${slot.venue}` : 'Free Period'">
                             
                             <div class="time-label-compact">
                                 <div class="theory-time" v-text="slot.theory_time"></div>
@@ -482,16 +482,13 @@
                             </div>
                             
                             <div v-if="slot.course">
-                                <div class="course-code" v-text="slot.course"></div>
                                 <div class="course-name" v-text="slot.name"></div>
-                                <div class="faculty-venue" v-text="slot.faculty"></div>
                                 <div class="faculty-venue" v-text="slot.venue"></div>
                                 <div class="slot-info">
                                     <div class="selected-slot">
                                         <i class="fas fa-check-circle"></i>
                                         <span v-text="slot.slot" :style="{color: slot.slot && slot.slot.startsWith('L') ? '#28a745' : '#007bff'}"></span>
                                     </div>
-                                    <div class="available-slots" v-text="slot.available_slots"></div>
                                 </div>
                             </div>
                             <div v-else class="free-period-info">
@@ -753,7 +750,6 @@
                     searchResults: [],
                     showCourseDropdown: false,
                     totalCourses: 0,
-                    totalCredits: 0,
                     busyHours: 0,
                     freeHours: 0,
                     dayOrder: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -854,7 +850,6 @@
                     });
                     
                     this.totalCourses = courses.size;
-                    this.totalCredits = courses.size * 3; // Assuming 3 credits per course
                     this.busyHours = busyCount;
                     this.freeHours = freeCount;
                 },
