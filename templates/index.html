@@ -600,7 +600,7 @@
                         </div>
                         <div class="modal-body">
                             <div v-if="selectedSlot.course">
-                                <p><strong>Course Code:</strong> <span v-text="selectedSlot.course"></span></p>
+                                <p><strong>Course Code:</strong> <span v-text="selectedSlot.course_code || 'N/A'"></span></p>
                                 <p><strong>Course Name:</strong> <span v-text="selectedSlot.name"></span></p>
                                 <p><strong>Faculty:</strong> <span v-text="selectedSlot.faculty"></span></p>
                                 <p><strong>Venue:</strong> <span v-text="selectedSlot.venue"></span></p>
