@@ -580,43 +580,50 @@ def search_courses():
 
 @app.route('/api/export-timetable')
 def export_timetable():
-    """Generate a shareable code for the current timetable"""
+    """Generate a compact shareable code for the current timetable"""
     try:
-        # Extract only occupied slots with course data
-        timetable_data = {}
+        # Extract unique courses with their slot combinations
+        courses = {}
         
         for day, schedule in TIMETABLE_TEMPLATE.items():
-            day_courses = []
-            for slot_index, slot in enumerate(schedule):
+            for slot in schedule:
                 if slot['course']:  # Only include occupied slots
-                    course_data = {
-                        'name': slot['name'],
-                        'course_code': slot.get('course_code', ''),
-                        'course_type': slot.get('course_type', ''),
-                        'credits': slot.get('credits', 0),
-                        'slot': slot['slot'],
-                        'faculty': slot['faculty'],
-                        'venue': slot['venue'],
-                        'slot_index': slot_index
-                    }
-                    day_courses.append(course_data)
-            
-            if day_courses:  # Only include days with courses
-                timetable_data[day] = day_courses
+                    course_id = slot['course']
+                    
+                    # If this is the first time we see this course, store its metadata
+                    if course_id not in courses:
+                        courses[course_id] = {
+                            'n': slot['name'],  # name
+                            'c': slot.get('course_code', ''),  # course_code
+                            't': slot.get('course_type', ''),  # type
+                            'r': slot.get('credits', 0),  # credits
+                            'f': slot['faculty'],  # faculty
+                            'v': slot['venue'],  # venue
+                            's': []  # slots array
+                        }
+                    
+                    # Add this slot if not already present
+                    if slot['slot'] not in courses[course_id]['s']:
+                        courses[course_id]['s'].append(slot['slot'])
         
-        # Convert to JSON and compress
-        json_data = json.dumps(timetable_data, separators=(',', ':'))
-        compressed_data = zlib.compress(json_data.encode('utf-8'))
+        # Convert to compact format: just the courses with their slots
+        compact_data = list(courses.values())
+        
+        # Convert to JSON and compress with maximum compression
+        json_data = json.dumps(compact_data, separators=(',', ':'))
+        compressed_data = zlib.compress(json_data.encode('utf-8'), level=9)
         encoded_data = base64.b64encode(compressed_data).decode('utf-8')
         
-        # Add version prefix for future compatibility
-        timetable_code = f"FFCX_V1_{encoded_data}"
+        # Add version prefix for compact format
+        timetable_code = f"FFCX_V2_{encoded_data}"
         
         return jsonify({
             'success': True,
             'code': timetable_code,
-            'courses_count': sum(len(courses) for courses in timetable_data.values()),
-            'message': 'Timetable code generated successfully'
+            'courses_count': len(courses),
+            'total_slots': sum(len(course['s']) for course in courses.values()),
+            'code_length': len(timetable_code),
+            'message': 'Compact timetable code generated successfully'
         })
         
     except Exception as e:
@@ -624,7 +631,7 @@ def export_timetable():
 
 @app.route('/api/import-timetable', methods=['POST'])
 def import_timetable():
-    """Load timetable from a shareable code"""
+    """Load timetable from a shareable code (supports both V1 and V2 formats)"""
     try:
         data = request.get_json()
         timetable_code = data.get('code', '').strip()
@@ -632,12 +639,95 @@ def import_timetable():
         if not timetable_code:
             return jsonify({'success': False, 'message': 'Please provide a timetable code'}), 400
         
-        # Check version and extract data
-        if not timetable_code.startswith('FFCX_V1_'):
+        # Determine version and extract data
+        if timetable_code.startswith('FFCX_V2_'):
+            # New compact format
+            encoded_data = timetable_code[8:]  # Remove "FFCX_V2_" prefix
+            return import_v2_format(encoded_data)
+        elif timetable_code.startswith('FFCX_V1_'):
+            # Legacy format
+            encoded_data = timetable_code[8:]  # Remove "FFCX_V1_" prefix
+            return import_v1_format(encoded_data)
+        else:
             return jsonify({'success': False, 'message': 'Invalid or unsupported timetable code format'}), 400
         
-        encoded_data = timetable_code[8:]  # Remove "FFCX_V1_" prefix
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error loading timetable: {str(e)}'}), 500
+
+def import_v2_format(encoded_data):
+    """Import compact V2 format - reconstructs timetable from course+slots data"""
+    try:
+        # Decode and decompress
+        compressed_data = base64.b64decode(encoded_data.encode('utf-8'))
+        json_data = zlib.decompress(compressed_data).decode('utf-8')
+        courses_data = json.loads(json_data)
         
+        # Clear current timetable
+        for day in TIMETABLE_TEMPLATE:
+            for slot_index in range(len(TIMETABLE_TEMPLATE[day])):
+                TIMETABLE_TEMPLATE[day][slot_index].update({
+                    'course': '',
+                    'name': '',
+                    'faculty': '',
+                    'venue': '',
+                    'slot': '',
+                    'course_code': '',
+                    'course_type': '',
+                    'credits': 0
+                })
+        
+        # Reconstruct timetable from compact course data
+        loaded_courses = 0
+        total_slots = 0
+        
+        for course in courses_data:
+            # Extract course metadata (using short keys)
+            course_name = course['n']
+            course_code = course.get('c', '')
+            course_type = course.get('t', '')
+            credits = course.get('r', 0)
+            faculty = course['f']
+            venue = course['v']
+            slots = course['s']
+            
+            # Create unique course identifier
+            course_id = f"{course_name}_{'+'.join(slots)}"
+            
+            # Place this course in all timetable positions where its slots appear
+            for slot_name in slots:
+                for day in TIMETABLE_TEMPLATE:
+                    for slot_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
+                        available_options = time_slot['available_slots'].split('/')
+                        
+                        # If this slot appears in this time position, place the course there
+                        if slot_name in available_options:
+                            TIMETABLE_TEMPLATE[day][slot_index].update({
+                                'course': course_id,
+                                'name': course_name,
+                                'course_code': course_code,
+                                'course_type': course_type,
+                                'credits': credits,
+                                'slot': slot_name,
+                                'faculty': faculty,
+                                'venue': venue
+                            })
+                            total_slots += 1
+            
+            loaded_courses += 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'Compact timetable loaded successfully! {loaded_courses} courses with {total_slots} time slots imported.',
+            'courses_loaded': loaded_courses,
+            'slots_filled': total_slots
+        })
+        
+    except Exception as e:
+        raise Exception(f'V2 format error: {str(e)}')
+
+def import_v1_format(encoded_data):
+    """Import legacy V1 format for backward compatibility"""
+    try:
         # Decode and decompress
         compressed_data = base64.b64decode(encoded_data.encode('utf-8'))
         json_data = zlib.decompress(compressed_data).decode('utf-8')
@@ -657,14 +747,13 @@ def import_timetable():
                     'credits': 0
                 })
         
-        # Load courses from code
+        # Load courses from V1 format (day-by-day with slot indices)
         loaded_courses = 0
         for day, courses in timetable_data.items():
             if day in TIMETABLE_TEMPLATE:
                 for course in courses:
                     slot_index = course['slot_index']
                     if 0 <= slot_index < len(TIMETABLE_TEMPLATE[day]):
-                        # Create unique course identifier
                         course_id = f"{course['name']}_{course['slot']}"
                         
                         TIMETABLE_TEMPLATE[day][slot_index].update({
@@ -681,18 +770,12 @@ def import_timetable():
         
         return jsonify({
             'success': True,
-            'message': f'Timetable loaded successfully! {loaded_courses} courses imported.',
+            'message': f'Legacy timetable loaded successfully! {loaded_courses} courses imported.',
             'courses_loaded': loaded_courses
         })
         
-    except base64.binascii.Error:
-        return jsonify({'success': False, 'message': 'Invalid timetable code format'}), 400
-    except zlib.error:
-        return jsonify({'success': False, 'message': 'Corrupted timetable code'}), 400
-    except json.JSONDecodeError:
-        return jsonify({'success': False, 'message': 'Invalid timetable data in code'}), 400
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Error loading timetable: {str(e)}'}), 500
+        raise Exception(f'V1 format error: {str(e)}')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
