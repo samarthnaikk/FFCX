@@ -839,5 +839,145 @@ def import_v1_format(encoded_data):
     except Exception as e:
         raise Exception(f'V1 format error: {str(e)}')
 
+@app.route('/api/optimize-timetable', methods=['POST'])
+def optimize_timetable():
+    """Optimize timetable based on teacher preferences and priorities"""
+    try:
+        data = request.get_json()
+        preferences = data.get('preferences', {})
+        
+        if not preferences:
+            return jsonify({'success': False, 'message': 'No preferences provided'}), 400
+        
+        # Simple optimization algorithm
+        # Clear current timetable
+        for day in TIMETABLE_TEMPLATE:
+            for slot_index in range(len(TIMETABLE_TEMPLATE[day])):
+                TIMETABLE_TEMPLATE[day][slot_index].update({
+                    'course': '',
+                    'name': '',
+                    'faculty': '',
+                    'venue': '',
+                    'slot': '',
+                    'course_code': '',
+                    'course_type': '',
+                    'credits': 0
+                })
+        
+        # Sort courses by priority (higher priority first)
+        sorted_courses = []
+        for course_name, pref in preferences.items():
+            sorted_courses.append({
+                'name': course_name,
+                'priority': pref.get('priority', 5),
+                'teacher_options': pref.get('teacherOptions', [])
+            })
+        
+        sorted_courses.sort(key=lambda x: x['priority'], reverse=True)
+        
+        assigned_courses = []
+        failed_courses = []
+        occupied_slots = set()
+        
+        for course in sorted_courses:
+            course_name = course['name']
+            teacher_options = course['teacher_options']
+            
+            if not teacher_options:
+                failed_courses.append(f"{course_name}: No teacher options provided")
+                continue
+            
+            # Sort teacher options by priority
+            teacher_options.sort(key=lambda x: x.get('priority', 5), reverse=True)
+            
+            assigned = False
+            for option in teacher_options:
+                slots = option.get('slots', '').strip()
+                faculty = option.get('faculty', '').strip()
+                venue = option.get('venue', '').strip()
+                
+                if not slots or not faculty:
+                    continue
+                
+                # Parse multiple slots (e.g., "A1+B1" or "A1, B1")
+                slot_list = []
+                if '+' in slots:
+                    slot_list = [s.strip().upper() for s in slots.split('+')]
+                elif ',' in slots:
+                    slot_list = [s.strip().upper() for s in slots.split(',')]
+                else:
+                    slot_list = [slots.upper()]
+                
+                # Check if any of the slots are already occupied or conflict
+                conflict = False
+                for slot in slot_list:
+                    if slot in occupied_slots:
+                        conflict = True
+                        break
+                    # Check for slot conflicts
+                    if slot in SLOT_CONFLICTS:
+                        for occupied_slot in occupied_slots:
+                            if occupied_slot in SLOT_CONFLICTS[slot]:
+                                conflict = True
+                                break
+                    if conflict:
+                        break
+                
+                if not conflict:
+                    # Try to assign this course to the timetable
+                    success = assign_course_to_slots(course_name, slot_list, faculty, venue)
+                    if success:
+                        occupied_slots.update(slot_list)
+                        assigned_courses.append(f"{course_name} -> {faculty} ({', '.join(slot_list)})")
+                        assigned = True
+                        break
+            
+            if not assigned:
+                failed_courses.append(f"{course_name}: No available non-conflicting slots found")
+        
+        message = f"Assigned {len(assigned_courses)} courses"
+        if failed_courses:
+            message += f", {len(failed_courses)} failed"
+        
+        return jsonify({
+            'success': len(failed_courses) == 0,
+            'message': message,
+            'assigned': assigned_courses,
+            'failed': failed_courses
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+def assign_course_to_slots(course_name, slot_list, faculty, venue):
+    """Helper function to assign a course to specific slots in the timetable"""
+    try:
+        # Create unique course identifier
+        course_id = f"{course_name}_{'+'.join(slot_list)}"
+        
+        # Find and fill all matching slots
+        filled_any = False
+        for slot in slot_list:
+            for day in TIMETABLE_TEMPLATE:
+                for slot_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
+                    available_options = time_slot['available_slots'].split('/')
+                    
+                    if slot in available_options and not time_slot['course']:
+                        TIMETABLE_TEMPLATE[day][slot_index].update({
+                            'course': course_id,
+                            'name': course_name,
+                            'faculty': faculty,
+                            'venue': venue,
+                            'slot': slot,
+                            'course_code': '',
+                            'course_type': '',
+                            'credits': 0
+                        })
+                        filled_any = True
+        
+        return filled_any
+    except Exception:
+        return False
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

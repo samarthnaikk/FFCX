@@ -1024,9 +1024,16 @@
                         <i class="fas fa-book-open me-2 text-primary"></i>
                         Enrolled Courses
                     </h3>
-                    <button class="btn btn-primary btn-sm rounded-circle" @click="showAddCourseModal" title="Add Course">
-                        <i class="fas fa-plus"></i>
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" @click="showPreferencesModal" title="Manage Teacher Preferences" 
+                                style="padding: 6px 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <i class="fas fa-cog me-1"></i>
+                            <span class="small">Preferences</span>
+                        </button>
+                        <button class="btn btn-primary btn-sm rounded-circle" @click="showAddCourseModal" title="Add Course">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <div v-if="loadingCourses" class="text-center py-5">
@@ -1290,6 +1297,168 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Preferences Modal -->
+            <div v-if="showPreferences" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @click.self="closePreferencesModal">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-star me-2"></i>Teacher Preferences & Optimization
+                            </h5>
+                            <button type="button" class="btn-close" @click="closePreferencesModal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted mb-4">
+                                Set multiple teacher options and priorities for each course. You can add any course here, even if it's not currently enrolled. The optimizer will try to find the best possible timetable based on your preferences.
+                                <br><strong>Priority System:</strong> Lower numbers = Higher priority (1 = highest, 10 = lowest)
+                            </p>
+
+                            <!-- Add New Course Section -->
+                            <div class="card mb-4 border-primary">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Course Preference</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3 position-relative">
+                                        <label class="form-label">Course Name</label>
+                                        <input v-model="newCourseSearchQuery" 
+                                               @input="searchCoursesForPreferences" 
+                                               @focus="showPreferenceCourseDropdown = true"
+                                               type="text" class="form-control" 
+                                               placeholder="Start typing course name (e.g., Computer Programming)"
+                                               autocomplete="off">
+                                        
+                                        <!-- Course dropdown for preferences -->
+                                        <div v-if="showPreferenceCourseDropdown && preferenceSearchResults.length > 0" 
+                                             class="dropdown-menu show w-100 mt-1" style="max-height: 200px; overflow-y: auto;">
+                                            <div v-for="course in preferenceSearchResults" :key="course.course_code" 
+                                                 @click="selectCourseForPreference(course)"
+                                                 class="dropdown-item cursor-pointer">
+                                                <div class="fw-bold" v-text="course.title"></div>
+                                                <small class="text-muted">
+                                                    <span v-text="course.course_code"></span> • 
+                                                    <span v-text="course.type"></span> • 
+                                                    <span v-text="course.credits"></span> credits
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Course Code</label>
+                                            <input type="text" class="form-control" v-model="newCoursePreference.code" 
+                                                   placeholder="e.g., CSE2001">
+                                            <small class="form-text text-muted">Auto-filled when you select a course above</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Course Type</label>
+                                            <input type="text" class="form-control" v-model="newCoursePreference.type" 
+                                                   placeholder="Theory/Lab">
+                                            <small class="form-text text-muted">Auto-filled when you select a course above</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Priority</label>
+                                            <input type="number" min="1" max="10" class="form-control" 
+                                                   v-model.number="newCoursePreference.priority">
+                                            <small class="form-text text-muted">Lower number = higher priority (1-10)</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm" @click="addNewCoursePreference">
+                                        <i class="fas fa-plus me-1"></i> Add Course
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Existing Courses from Timetable -->
+                            <div v-if="courses.length > 0" class="mb-3">
+                                <h6><i class="fas fa-book me-2"></i>Currently Enrolled Courses</h6>
+                            </div>
+
+                            <!-- All Course Preferences -->
+                            <div v-if="Object.keys(preferences).length === 0" class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                No course preferences set. Add courses above or enroll in courses first.
+                            </div>
+
+                            <div v-for="(pref, courseName) in preferences" :key="courseName" class="card mb-3">
+                                <div class="card-header">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h6 class="mb-0" v-text="courseName"></h6>
+                                            <small class="text-muted" v-text="pref.code || 'Custom Course'"></small>
+                                        </div>
+                                        <div class="col-auto d-flex align-items-center gap-3">
+                                            <div>
+                                                <label class="form-label small mb-1">Subject Priority</label>
+                                                <input type="number" min="1" max="10" class="form-control form-control-sm" style="width: 80px;"
+                                                       v-model.number="pref.priority" title="Lower number = higher priority">
+                                                <small class="text-muted" style="font-size: 0.7em;">1=highest</small>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-danger" @click="removeCoursePreference(courseName)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Teacher Options</label>
+                                        <div v-if="pref.teacherOptions.length === 0" class="text-muted mb-2">
+                                            No teacher options added yet.
+                                        </div>
+                                        <div v-for="(option, index) in pref.teacherOptions" 
+                                             :key="index" class="border rounded p-3 mb-2">
+                                            <div class="row">
+                                                <div class="col-md-3 mb-2">
+                                                    <label class="form-label small">Faculty</label>
+                                                    <input v-model="option.faculty" type="text" class="form-control form-control-sm" 
+                                                           placeholder="Dr. Name">
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <label class="form-label small">Slots</label>
+                                                    <input v-model="option.slots" type="text" class="form-control form-control-sm" 
+                                                           placeholder="A1, B1+L5">
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <label class="form-label small">Venue</label>
+                                                    <input v-model="option.venue" type="text" class="form-control form-control-sm" 
+                                                           placeholder="SJT101">
+                                                </div>
+                                                <div class="col-md-2 mb-2">
+                                                    <label class="form-label small">Priority</label>
+                                                    <input v-model.number="option.priority" type="number" min="1" max="10" 
+                                                           class="form-control form-control-sm" title="Lower number = higher priority">
+                                                    <small class="form-text text-muted">1=highest</small>
+                                                </div>
+                                                <div class="col-md-1 mb-2 d-flex align-items-end">
+                                                    <button @click="removeTeacherOption(courseName, index)" 
+                                                            class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button @click="addTeacherOption(courseName)" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-plus me-1"></i> Add Teacher Option
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @click="closePreferencesModal">Close</button>
+                            <button type="button" class="btn btn-success" @click="savePreferences">
+                                <i class="fas fa-save me-1"></i> Save Preferences
+                            </button>
+                            <button type="button" class="btn btn-primary" @click="optimizeTimetable">
+                                <i class="fas fa-magic me-1"></i> Optimize Timetable
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1333,6 +1502,19 @@
                     importCode: '',
                     // Dark mode
                     isDarkMode: false,
+                    // Preferences modal
+                    showPreferences: false,
+                    preferences: {},
+                    newCoursePreference: {
+                        name: '',
+                        code: '',
+                        type: '',
+                        priority: 5
+                    },
+                    // Course search for preferences
+                    newCourseSearchQuery: '',
+                    preferenceSearchResults: [],
+                    showPreferenceCourseDropdown: false,
                     loadingExport: false,
                     loadingImport: false,
                     copyStatus: 'Copy to clipboard',
@@ -1387,6 +1569,7 @@
                 document.addEventListener('click', (e) => {
                     if (!e.target.closest('.position-relative')) {
                         this.showCourseDropdown = false;
+                        this.showPreferenceCourseDropdown = false;
                     }
                 });
             },
@@ -1660,6 +1843,158 @@
                             this.copyStatus = 'Copy to clipboard';
                             this.copyIcon = 'fas fa-copy';
                         }, 2000);
+                    }
+                },
+
+                showPreferencesModal() {
+                    this.initializePreferences();
+                    this.showPreferences = true;
+                },
+
+                closePreferencesModal() {
+                    this.showPreferences = false;
+                },
+
+                initializePreferences() {
+                    // Load saved preferences from localStorage
+                    const saved = localStorage.getItem('ffcx_preferences');
+                    if (saved) {
+                        try {
+                            this.preferences = JSON.parse(saved);
+                        } catch (e) {
+                            this.preferences = {};
+                        }
+                    }
+
+                    // Initialize preferences for current courses if not already present
+                    this.courses.forEach(course => {
+                        const key = course.name || course.course_code;
+                        if (!this.preferences[key]) {
+                            this.preferences[key] = {
+                                priority: 5,
+                                code: course.course_code,
+                                teacherOptions: [{
+                                    faculty: course.faculty || '',
+                                    slots: course.slots || '',
+                                    venue: course.venue || '',
+                                    priority: 5
+                                }]
+                            };
+                        }
+                    });
+                },
+
+                addNewCoursePreference() {
+                    const courseName = this.newCourseSearchQuery.trim() || this.newCoursePreference.name.trim();
+                    
+                    if (!courseName) {
+                        alert('Please enter a course name');
+                        return;
+                    }
+                    
+                    if (this.preferences[courseName]) {
+                        alert('Course preference already exists');
+                        return;
+                    }
+
+                    this.preferences[courseName] = {
+                        priority: this.newCoursePreference.priority,
+                        code: this.newCoursePreference.code.trim(),
+                        type: this.newCoursePreference.type.trim(),
+                        teacherOptions: []
+                    };
+
+                    // Reset form
+                    this.newCoursePreference = {
+                        name: '',
+                        code: '',
+                        type: '',
+                        priority: 5
+                    };
+                    this.newCourseSearchQuery = '';
+                    this.preferenceSearchResults = [];
+                    this.showPreferenceCourseDropdown = false;
+                },
+
+                async searchCoursesForPreferences() {
+                    if (this.newCourseSearchQuery.length < 1) {
+                        this.preferenceSearchResults = [];
+                        this.showPreferenceCourseDropdown = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/search-courses?q=${encodeURIComponent(this.newCourseSearchQuery)}`);
+                        const results = await response.json();
+                        this.preferenceSearchResults = results;
+                        this.showPreferenceCourseDropdown = results.length > 0;
+                    } catch (error) {
+                        console.error('Error searching courses for preferences:', error);
+                        this.preferenceSearchResults = [];
+                        this.showPreferenceCourseDropdown = false;
+                    }
+                },
+
+                selectCourseForPreference(course) {
+                    this.newCoursePreference.name = course.title;
+                    this.newCoursePreference.code = course.course_code;
+                    this.newCoursePreference.type = course.type;
+                    this.newCourseSearchQuery = course.title;
+                    this.showPreferenceCourseDropdown = false;
+                    this.preferenceSearchResults = [];
+                },
+
+                removeCoursePreference(courseName) {
+                    if (confirm(`Remove all preferences for "${courseName}"?`)) {
+                        delete this.preferences[courseName];
+                    }
+                },
+
+                addTeacherOption(courseKey) {
+                    if (!this.preferences[courseKey]) {
+                        this.preferences[courseKey] = { priority: 5, teacherOptions: [] };
+                    }
+                    this.preferences[courseKey].teacherOptions.push({
+                        faculty: '',
+                        slots: '',
+                        venue: '',
+                        priority: 5
+                    });
+                },
+
+                removeTeacherOption(courseKey, index) {
+                    if (this.preferences[courseKey] && this.preferences[courseKey].teacherOptions) {
+                        this.preferences[courseKey].teacherOptions.splice(index, 1);
+                    }
+                },
+
+                savePreferences() {
+                    localStorage.setItem('ffcx_preferences', JSON.stringify(this.preferences));
+                    alert('Preferences saved!');
+                },
+
+                async optimizeTimetable() {
+                    try {
+                        const response = await fetch('/api/optimize-timetable', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ preferences: this.preferences })
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            await this.fetchTimetable();
+                            await this.fetchCourses();
+                            this.closePreferencesModal();
+                            alert(`Optimization completed! ${result.message}`);
+                        } else {
+                            alert(`Optimization failed: ${result.message}`);
+                        }
+                    } catch (error) {
+                        console.error('Error optimizing timetable:', error);
+                        alert('Error optimizing timetable');
                     }
                 },
 
