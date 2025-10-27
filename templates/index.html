@@ -1024,13 +1024,14 @@
                         <i class="fas fa-book-open me-2 text-primary"></i>
                         Enrolled Courses
                     </h3>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center">
                         <button class="btn btn-outline-secondary btn-sm" @click="showPreferencesModal" title="Manage Teacher Preferences" 
                                 style="padding: 6px 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                             <i class="fas fa-cog me-1"></i>
                             <span class="small">Preferences</span>
                         </button>
-                        <button class="btn btn-primary btn-sm rounded-circle" @click="showAddCourseModal" title="Add Course">
+                        <button class="btn btn-primary btn-sm rounded-circle d-flex align-items-center justify-content-center" 
+                                @click="showAddCourseModal" title="Add Course" style="width: 36px; height: 36px;">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -1984,13 +1985,30 @@
                         });
 
                         const result = await response.json();
+                        
+                        // Always refresh the timetable and courses to show changes
+                        await this.fetchTimetable();
+                        await this.fetchCourses();
+                        
                         if (result.success) {
-                            await this.fetchTimetable();
-                            await this.fetchCourses();
                             this.closePreferencesModal();
-                            alert(`Optimization completed! ${result.message}`);
+                            alert(`✅ Optimization completed successfully!\n\n${result.message}\n\nAssigned:\n${result.assigned.join('\n')}`);
                         } else {
-                            alert(`Optimization failed: ${result.message}`);
+                            let message = `⚠️ Optimization completed with issues:\n\n${result.message}`;
+                            
+                            if (result.assigned && result.assigned.length > 0) {
+                                message += `\n\n✅ Successfully assigned:\n${result.assigned.join('\n')}`;
+                            }
+                            
+                            if (result.failed && result.failed.length > 0) {
+                                message += `\n\n❌ Failed to assign:\n${result.failed.join('\n')}`;
+                            }
+                            
+                            if (result.clashes && result.clashes.length > 0) {
+                                message += `\n\n⚠️ Clashes detected:\n${result.clashes.map(c => c.message).join('\n')}`;
+                            }
+                            
+                            alert(message);
                         }
                     } catch (error) {
                         console.error('Error optimizing timetable:', error);

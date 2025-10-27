@@ -864,7 +864,7 @@ def optimize_timetable():
                     'credits': 0
                 })
         
-        # Sort courses by priority (higher priority first)
+        # Sort courses by priority (lower number = higher priority)
         sorted_courses = []
         for course_name, pref in preferences.items():
             sorted_courses.append({
@@ -873,30 +873,45 @@ def optimize_timetable():
                 'teacher_options': pref.get('teacherOptions', [])
             })
         
-        sorted_courses.sort(key=lambda x: x['priority'], reverse=True)
+        # Sort by priority: lower numbers first (higher priority)
+        sorted_courses.sort(key=lambda x: x['priority'])
         
         assigned_courses = []
         failed_courses = []
         occupied_slots = set()
         
+        print(f"Starting optimization with {len(sorted_courses)} courses:")
+        for course in sorted_courses:
+            print(f"  - {course['name']} (priority: {course['priority']})")
+        
         for course in sorted_courses:
             course_name = course['name']
             teacher_options = course['teacher_options']
             
+            print(f"\nProcessing course: {course_name} (priority: {course['priority']})")
+            
             if not teacher_options:
                 failed_courses.append(f"{course_name}: No teacher options provided")
+                print(f"  FAILED: No teacher options")
                 continue
             
-            # Sort teacher options by priority
-            teacher_options.sort(key=lambda x: x.get('priority', 5), reverse=True)
+            # Sort teacher options by priority (lower number = higher priority)
+            teacher_options.sort(key=lambda x: x.get('priority', 5))
+            
+            print(f"  Teacher options ({len(teacher_options)}):")
+            for i, option in enumerate(teacher_options):
+                print(f"    {i+1}. {option.get('faculty', 'N/A')} - {option.get('slots', 'N/A')} (priority: {option.get('priority', 5)})")
             
             assigned = False
-            for option in teacher_options:
+            for option_idx, option in enumerate(teacher_options):
                 slots = option.get('slots', '').strip()
                 faculty = option.get('faculty', '').strip()
                 venue = option.get('venue', '').strip()
                 
+                print(f"  Trying option {option_idx+1}: {faculty} for slots {slots}")
+                
                 if not slots or not faculty:
+                    print(f"    SKIP: Missing slots or faculty")
                     continue
                 
                 # Parse multiple slots (e.g., "A1+B1" or "A1, B1")
@@ -910,40 +925,59 @@ def optimize_timetable():
                 
                 # Check if any of the slots are already occupied or conflict
                 conflict = False
+                conflict_reason = ""
+                
                 for slot in slot_list:
                     if slot in occupied_slots:
                         conflict = True
+                        conflict_reason = f"slot {slot} already occupied"
                         break
                     # Check for slot conflicts
                     if slot in SLOT_CONFLICTS:
                         for occupied_slot in occupied_slots:
                             if occupied_slot in SLOT_CONFLICTS[slot]:
                                 conflict = True
+                                conflict_reason = f"slot {slot} conflicts with occupied slot {occupied_slot}"
                                 break
                     if conflict:
                         break
                 
-                if not conflict:
+                if conflict:
+                    print(f"    CONFLICT: {conflict_reason}")
+                else:
+                    print(f"    ATTEMPTING assignment to slots: {slot_list}")
                     # Try to assign this course to the timetable
                     success = assign_course_to_slots(course_name, slot_list, faculty, venue)
                     if success:
                         occupied_slots.update(slot_list)
                         assigned_courses.append(f"{course_name} -> {faculty} ({', '.join(slot_list)})")
                         assigned = True
+                        print(f"    SUCCESS: Assigned to {', '.join(slot_list)}")
                         break
+                    else:
+                        print(f"    FAILED: Could not assign to timetable slots")
             
             if not assigned:
                 failed_courses.append(f"{course_name}: No available non-conflicting slots found")
+                print(f"  FINAL RESULT: FAILED - No available slots")
         
         message = f"Assigned {len(assigned_courses)} courses"
         if failed_courses:
             message += f", {len(failed_courses)} failed"
         
+        # Check for clashes in the final timetable
+        clashes = check_timetable_clashes()
+        
+        # Update message if clashes found
+        if clashes:
+            message += f" ⚠️ {len(clashes)} clash(es) detected!"
+        
         return jsonify({
-            'success': len(failed_courses) == 0,
+            'success': len(failed_courses) == 0 and len(clashes) == 0,
             'message': message,
             'assigned': assigned_courses,
-            'failed': failed_courses
+            'failed': failed_courses,
+            'clashes': clashes
         })
         
     except Exception as e:
@@ -955,29 +989,72 @@ def assign_course_to_slots(course_name, slot_list, faculty, venue):
         # Create unique course identifier
         course_id = f"{course_name}_{'+'.join(slot_list)}"
         
-        # Find and fill all matching slots
-        filled_any = False
+        # Find ALL matching slots for each slot in the list
+        all_slots_to_fill = []
         for slot in slot_list:
+            slots_for_this_slot = []
             for day in TIMETABLE_TEMPLATE:
                 for slot_index, time_slot in enumerate(TIMETABLE_TEMPLATE[day]):
                     available_options = time_slot['available_slots'].split('/')
                     
                     if slot in available_options and not time_slot['course']:
-                        TIMETABLE_TEMPLATE[day][slot_index].update({
-                            'course': course_id,
-                            'name': course_name,
-                            'faculty': faculty,
-                            'venue': venue,
-                            'slot': slot,
-                            'course_code': '',
-                            'course_type': '',
-                            'credits': 0
-                        })
-                        filled_any = True
+                        slots_for_this_slot.append((day, slot_index, slot))
+            
+            if not slots_for_this_slot:
+                print(f"    ERROR: Could not find any available slot {slot} in timetable")
+                return False
+            
+            all_slots_to_fill.extend(slots_for_this_slot)
         
-        return filled_any
-    except Exception:
+        # If we found all required slots, fill them ALL
+        filled_count = 0
+        for day, slot_index, slot in all_slots_to_fill:
+            TIMETABLE_TEMPLATE[day][slot_index].update({
+                'course': course_id,
+                'name': course_name,
+                'faculty': faculty,
+                'venue': venue,
+                'slot': slot,
+                'course_code': course_name,  # Use course name as code for now
+                'course_type': 'Theory' if slot.startswith(('A', 'B', 'C', 'D', 'E', 'F', 'G')) else 'Lab',
+                'credits': 3  # Default credits
+            })
+            filled_count += 1
+            print(f"    FILLED: {day} slot {slot_index} with {course_name} ({slot})")
+        
+        print(f"    TOTAL FILLED: {filled_count} slots for {course_name}")
+        return filled_count > 0
+    except Exception as e:
+        print(f"    EXCEPTION in assign_course_to_slots: {str(e)}")
         return False
+
+def check_timetable_clashes():
+    """Check for clashes in the current timetable using existing validation logic"""
+    enrolled_slots = set()
+    conflicts = []
+    
+    # Collect all enrolled slots
+    for day_schedule in TIMETABLE_TEMPLATE.values():
+        for slot in day_schedule:
+            if slot['course'] and slot['slot']:
+                enrolled_slots.add(slot['slot'])
+    
+    # Check for conflicts
+    for slot in enrolled_slots:
+        if slot in SLOT_CONFLICTS:
+            conflicting_slots = SLOT_CONFLICTS[slot]
+            for conflict in conflicting_slots:
+                if conflict in enrolled_slots:
+                    # Avoid duplicate conflicts (A conflicts with B is same as B conflicts with A)
+                    conflict_pair = tuple(sorted([slot, conflict]))
+                    if not any(tuple(sorted([c['slot1'], c['slot2']])) == conflict_pair for c in conflicts):
+                        conflicts.append({
+                            "slot1": slot,
+                            "slot2": conflict,
+                            "message": f"Slot {slot} conflicts with {conflict}"
+                        })
+    
+    return conflicts
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
