@@ -588,6 +588,64 @@
                 </div>
             </div>
 
+            <!-- Timetable Code Section -->
+            <div class="mt-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-qrcode me-2 text-primary"></i>
+                            Timetable Code
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            Export your timetable as a code to share or backup, or import someone else's timetable using their code.
+                        </p>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Export Current Timetable</label>
+                                <div class="d-grid">
+                                    <button class="btn btn-outline-primary" @click="generateTimetableCode" :disabled="loadingExport">
+                                        <i class="fas fa-download me-2"></i>
+                                        <span v-if="loadingExport">Generating...</span>
+                                        <span v-else>Generate Code</span>
+                                    </button>
+                                </div>
+                                <div v-if="generatedCode" class="mt-3">
+                                    <label class="form-label small">Your Timetable Code:</label>
+                                    <div class="input-group">
+                                        <input v-model="generatedCode" type="text" class="form-control font-monospace small" readonly>
+                                        <button class="btn btn-outline-secondary" @click="copyCode" :title="copyStatus">
+                                            <i :class="copyIcon"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Code generated! Share this code to let others import your timetable.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Import Timetable from Code</label>
+                                <div class="input-group mb-2">
+                                    <input v-model="importCode" type="text" class="form-control font-monospace" 
+                                           placeholder="Paste timetable code here..." :disabled="loadingImport">
+                                    <button class="btn btn-success" @click="importTimetableCode" :disabled="!importCode.trim() || loadingImport">
+                                        <i class="fas fa-upload me-2"></i>
+                                        <span v-if="loadingImport">Loading...</span>
+                                        <span v-else>Import</span>
+                                    </button>
+                                </div>
+                                <small class="text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    This will replace your current timetable!
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Course Details Modal -->
             <div v-if="selectedSlot" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @click.self="closeModal">
                 <div class="modal-dialog">
@@ -752,7 +810,14 @@
                     totalCourses: 0,
                     busyHours: 0,
                     freeHours: 0,
-                    dayOrder: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                    dayOrder: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                    // Timetable code functionality
+                    generatedCode: '',
+                    importCode: '',
+                    loadingExport: false,
+                    loadingImport: false,
+                    copyStatus: 'Copy to clipboard',
+                    copyIcon: 'fas fa-copy'
                 }
             },
             computed: {
@@ -976,6 +1041,97 @@
                     } catch (error) {
                         console.error('Error removing course:', error);
                         alert('Error removing course');
+                    }
+                },
+
+                async generateTimetableCode() {
+                    this.loadingExport = true;
+                    this.generatedCode = '';
+                    
+                    try {
+                        const response = await fetch('/api/export-timetable');
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            this.generatedCode = result.code;
+                            alert(`Timetable code generated! ${result.courses_count} courses exported.`);
+                        } else {
+                            alert('Error generating code: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error generating timetable code:', error);
+                        alert('Error generating timetable code');
+                    } finally {
+                        this.loadingExport = false;
+                    }
+                },
+
+                async importTimetableCode() {
+                    if (!this.importCode.trim()) {
+                        alert('Please enter a timetable code');
+                        return;
+                    }
+
+                    this.loadingImport = true;
+                    
+                    try {
+                        const response = await fetch('/api/import-timetable', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ code: this.importCode })
+                        });
+
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            // Refresh timetable and courses
+                            await this.fetchTimetable();
+                            await this.fetchCourses();
+                            this.importCode = '';
+                            alert(result.message);
+                        } else {
+                            alert('Error importing timetable: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error importing timetable:', error);
+                        alert('Error importing timetable');
+                    } finally {
+                        this.loadingImport = false;
+                    }
+                },
+
+                async copyCode() {
+                    if (!this.generatedCode) {
+                        return;
+                    }
+
+                    try {
+                        await navigator.clipboard.writeText(this.generatedCode);
+                        this.copyStatus = 'Copied!';
+                        this.copyIcon = 'fas fa-check text-success';
+                        
+                        setTimeout(() => {
+                            this.copyStatus = 'Copy to clipboard';
+                            this.copyIcon = 'fas fa-copy';
+                        }, 2000);
+                    } catch (error) {
+                        // Fallback for browsers that don't support clipboard API
+                        const textArea = document.createElement('textarea');
+                        textArea.value = this.generatedCode;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        this.copyStatus = 'Copied!';
+                        this.copyIcon = 'fas fa-check text-success';
+                        
+                        setTimeout(() => {
+                            this.copyStatus = 'Copy to clipboard';
+                            this.copyIcon = 'fas fa-copy';
+                        }, 2000);
                     }
                 }
             }
