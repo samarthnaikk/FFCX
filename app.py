@@ -129,13 +129,13 @@ def generate_slot_conflicts():
 
     This function collects all time ranges where a given slot appears (a slot may appear
     in multiple day/time entries). It then marks two slots as conflicting if any of their
-    time ranges overlap.
+    time ranges overlap ON THE SAME DAY.
     """
     from collections import defaultdict
 
-    slot_ranges = defaultdict(list)  # slot -> list of (start,end)
+    slot_ranges = defaultdict(list)  # slot -> list of (day, start, end)
 
-    # Collect ranges for each slot across timetable
+    # Collect ranges for each slot across timetable with day information
     for day, schedule in TIMETABLE_TEMPLATE.items():
         for slot_info in schedule:
             available_slots = [s.strip() for s in slot_info['available_slots'].split('/')]
@@ -147,10 +147,10 @@ def generate_slot_conflicts():
                     continue
                 if s.startswith('L'):
                     if lab_range[0] is not None:
-                        slot_ranges[s].append(lab_range)
+                        slot_ranges[s].append((day, lab_range[0], lab_range[1]))
                 else:
                     if theory_range[0] is not None:
-                        slot_ranges[s].append(theory_range)
+                        slot_ranges[s].append((day, theory_range[0], theory_range[1]))
 
     # Build conflict map
     conflicts = {s: [] for s in slot_ranges}
@@ -160,11 +160,12 @@ def generate_slot_conflicts():
         for j, s2 in enumerate(slots):
             if s1 == s2:
                 continue
-            # If any range of s1 overlaps any range of s2, they conflict
+            # If any range of s1 overlaps any range of s2 ON THE SAME DAY, they conflict
             overlap_found = False
-            for r1 in slot_ranges[s1]:
-                for r2 in slot_ranges[s2]:
-                    if range_overlap(r1, r2):
+            for day1, start1, end1 in slot_ranges[s1]:
+                for day2, start2, end2 in slot_ranges[s2]:
+                    # Only check for conflicts on the same day
+                    if day1 == day2 and range_overlap((start1, end1), (start2, end2)):
                         overlap_found = True
                         break
                 if overlap_found:
@@ -177,6 +178,59 @@ def generate_slot_conflicts():
 
 # Generate conflicts dynamically based on actual time overlaps
 SLOT_CONFLICTS = generate_slot_conflicts()
+
+def get_conflict_details(slot1, slot2):
+    """Get detailed information about where two slots conflict"""
+    conflicts = []
+    
+    # Find all instances of both slots in the timetable
+    slot1_instances = []
+    slot2_instances = []
+    
+    for day, schedule in TIMETABLE_TEMPLATE.items():
+        for time_index, slot_info in enumerate(schedule):
+            available_slots = [s.strip() for s in slot_info['available_slots'].split('/')]
+            
+            if slot1 in available_slots:
+                slot1_instances.append({
+                    'day': day,
+                    'time': slot_info['time'],
+                    'theory_time': slot_info.get('theory_time', ''),
+                    'lab_time': slot_info.get('lab_time', '')
+                })
+            
+            if slot2 in available_slots:
+                slot2_instances.append({
+                    'day': day,
+                    'time': slot_info['time'],
+                    'theory_time': slot_info.get('theory_time', ''),
+                    'lab_time': slot_info.get('lab_time', '')
+                })
+    
+    # Check for conflicts between instances
+    for s1_instance in slot1_instances:
+        for s2_instance in slot2_instances:
+            # Only check conflicts on the same day
+            if s1_instance['day'] == s2_instance['day']:
+                # Get the appropriate time ranges
+                s1_time_range = parse_time_range(s1_instance['lab_time'] if slot1.startswith('L') else s1_instance['theory_time'])
+                s2_time_range = parse_time_range(s2_instance['lab_time'] if slot2.startswith('L') else s2_instance['theory_time'])
+                
+                # Check if they overlap
+                if s1_time_range[0] is not None and s2_time_range[0] is not None:
+                    if range_overlap(s1_time_range, s2_time_range):
+                        s1_actual_time = s1_instance['lab_time'] if slot1.startswith('L') else s1_instance['theory_time']
+                        s2_actual_time = s2_instance['lab_time'] if slot2.startswith('L') else s2_instance['theory_time']
+                        
+                        conflicts.append({
+                            'day': s1_instance['day'],
+                            'slot1_time': s1_actual_time,
+                            'slot2_time': s2_actual_time,
+                            'slot1_type': 'Lab' if slot1.startswith('L') else 'Theory',
+                            'slot2_type': 'Lab' if slot2.startswith('L') else 'Theory'
+                        })
+    
+    return conflicts
 
 def load_courses_from_csv():
     """Load courses from courses.csv file"""
@@ -414,18 +468,26 @@ def add_course():
                 conflicting_slots = SLOT_CONFLICTS[slot]
                 for conflict_slot in conflicting_slots:
                     if conflict_slot in currently_enrolled_slots:
-                        return jsonify({
-                            'success': False, 
-                            'message': f'Cannot add slot {slot} because it conflicts with already enrolled slot {conflict_slot}. Lab sessions overlap with theory sessions.'
-                        }), 400
+                        # Get detailed conflict information
+                        conflict_details = get_conflict_details(slot, conflict_slot)
+                        if conflict_details:
+                            conflict_info = conflict_details[0]  # Take the first conflict
+                            return jsonify({
+                                'success': False, 
+                                'message': f'Cannot add slot {slot} because it conflicts with already enrolled slot {conflict_slot} on {conflict_info["day"]} ({slot} {conflict_info["slot1_type"]}: {conflict_info["slot1_time"]} overlaps with {conflict_slot} {conflict_info["slot2_type"]}: {conflict_info["slot2_time"]}).'
+                            }), 400
             
             # Check if enrolled slots conflict with this new slot
             for enrolled_slot in currently_enrolled_slots:
                 if enrolled_slot in SLOT_CONFLICTS and slot in SLOT_CONFLICTS[enrolled_slot]:
-                    return jsonify({
-                        'success': False, 
-                        'message': f'Cannot add slot {slot} because enrolled slot {enrolled_slot} conflicts with it. Lab sessions overlap with theory sessions.'
-                    }), 400
+                    # Get detailed conflict information
+                    conflict_details = get_conflict_details(enrolled_slot, slot)
+                    if conflict_details:
+                        conflict_info = conflict_details[0]  # Take the first conflict
+                        return jsonify({
+                            'success': False, 
+                            'message': f'Cannot add slot {slot} because enrolled slot {enrolled_slot} conflicts with it on {conflict_info["day"]} ({enrolled_slot} {conflict_info["slot1_type"]}: {conflict_info["slot1_time"]} overlaps with {slot} {conflict_info["slot2_type"]}: {conflict_info["slot2_time"]}).'
+                        }), 400
         
         # Check availability for all requested slots
         all_occupied_slots = []
