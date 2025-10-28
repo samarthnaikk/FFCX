@@ -263,6 +263,65 @@ def load_courses_from_csv():
 # Load courses at startup
 AVAILABLE_COURSES = load_courses_from_csv()
 
+def load_teachers_from_csv():
+    """Load teacher data from all_teachers.csv file and organize by course"""
+    teachers_by_course = {}
+    csv_path = os.path.join(os.path.dirname(__file__), 'all_teachers.csv')
+    
+    if not os.path.exists(csv_path):
+        return teachers_by_course
+    
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                # Skip empty rows
+                if not row.get('Course Name', '').strip():
+                    continue
+                    
+                course_name = row.get('Course Name', '').strip()
+                course_code = row.get('Course Code', '').strip()
+                faculty = row.get('Faculty', '').strip()
+                slot = row.get('Slot', '').strip()
+                venue = row.get('Venue', '').strip()
+                course_type = row.get('Type', '').strip()
+                
+                # Create course entry if it doesn't exist
+                if course_name not in teachers_by_course:
+                    teachers_by_course[course_name] = {
+                        'course_code': course_code,
+                        'course_name': course_name,
+                        'teachers': []
+                    }
+                
+                # Check if this teacher-slot combination already exists
+                existing_teacher = None
+                for teacher in teachers_by_course[course_name]['teachers']:
+                    if teacher['faculty'] == faculty and teacher['slot'] == slot and teacher['venue'] == venue:
+                        existing_teacher = teacher
+                        break
+                
+                # If not found, add new teacher option with sequential priority
+                if not existing_teacher:
+                    # Calculate priority based on current number of teachers for this course
+                    priority = len(teachers_by_course[course_name]['teachers']) + 1
+                    
+                    teachers_by_course[course_name]['teachers'].append({
+                        'faculty': faculty,
+                        'slot': slot,
+                        'venue': venue,
+                        'type': course_type,
+                        'priority': priority  # Sequential priority: 1, 2, 3, ...
+                    })
+                    
+    except Exception as e:
+        print(f"Error loading all_teachers.csv: {e}")
+    
+    return teachers_by_course
+
+# Load teachers at startup
+TEACHERS_BY_COURSE = load_teachers_from_csv()
+
 @app.route('/')
 def index():
     """Homepage with Vue.js timetable"""
@@ -639,6 +698,30 @@ def search_courses():
     
     # Limit results to prevent too many options
     return jsonify(results[:20])
+
+@app.route('/api/course-teachers')
+def get_course_teachers():
+    """API endpoint to get all teachers and slots for a specific course"""
+    course_name = request.args.get('course', '').strip()
+    
+    if not course_name:
+        return jsonify({'teachers': []})
+    
+    # Find exact match first
+    if course_name in TEACHERS_BY_COURSE:
+        return jsonify(TEACHERS_BY_COURSE[course_name])
+    
+    # If no exact match, try partial match
+    for course_key, course_data in TEACHERS_BY_COURSE.items():
+        if course_name.lower() in course_key.lower():
+            return jsonify(course_data)
+    
+    return jsonify({'teachers': []})
+
+@app.route('/api/all-teachers')
+def get_all_teachers():
+    """API endpoint to get all teacher data organized by course"""
+    return jsonify(TEACHERS_BY_COURSE)
 
 @app.route('/api/export-timetable')
 def export_timetable():

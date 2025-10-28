@@ -1278,8 +1278,42 @@
                                 
                                 <div class="mb-3">
                                     <label class="form-label">Faculty Name</label>
-                                    <input v-model="newCourse.faculty" type="text" class="form-control" required 
-                                           placeholder="Enter faculty name">
+                                    <div class="position-relative">
+                                        <input v-model="teacherSearchQuery" 
+                                               @input="newCourse.faculty = teacherSearchQuery; searchTeachers()" 
+                                               @focus="showTeacherDropdown = teacherSuggestions.length > 0"
+                                               type="text" class="form-control" required 
+                                               placeholder="Enter faculty name or search suggestions"
+                                               autocomplete="off">
+                                        
+                                        <!-- Teacher Suggestions Dropdown -->
+                                        <div v-if="showTeacherDropdown && teacherSuggestions.length > 0" 
+                                             class="dropdown-menu show position-absolute w-100" style="z-index: 1050;">
+                                            <div v-for="teacher in getFilteredTeachers().slice(0, 10)" :key="teacher.faculty + teacher.slot"
+                                                 class="dropdown-item cursor-pointer d-flex justify-content-between"
+                                                 @click="selectTeacher(teacher)">
+                                                <div>
+                                                    <strong v-text="teacher.faculty"></strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Slot: <span v-text="teacher.slot"></span> | Venue: <span v-text="teacher.venue"></span>
+                                                    </small>
+                                                </div>
+                                                <small class="badge bg-primary" v-text="teacher.type"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        <span v-if="teacherSuggestions.length > 0">
+                                            <span v-text="teacherSuggestions.length"></span> teacher option(s) available for this course
+                                        </span>
+                                        <span v-else-if="newCourse.subject_name">
+                                            No teacher data available for this course
+                                        </span>
+                                        <span v-else>
+                                            Select a course first to see teacher suggestions
+                                        </span>
+                                    </small>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Venue</label>
@@ -1375,6 +1409,27 @@
                             <!-- Existing Courses from Timetable -->
                             <div v-if="courses.length > 0" class="mb-3">
                                 <h6><i class="fas fa-book me-2"></i>Currently Enrolled Courses</h6>
+                                <div class="row g-2 mb-3">
+                                    <div v-for="course in courses" :key="course.name" class="col-md-6">
+                                        <div class="card card-body py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="fw-bold" v-text="course.name"></small><br>
+                                                    <small class="text-muted" v-text="course.faculty"></small>
+                                                </div>
+                                                <button v-if="!preferences[course.name]" 
+                                                        @click="addEnrolledCourseToPreferences(course.name)"
+                                                        class="btn btn-sm btn-outline-primary" 
+                                                        title="Add to preferences">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                                <span v-else class="text-success">
+                                                    <i class="fas fa-check"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- All Course Preferences -->
@@ -1494,6 +1549,10 @@
                     courseSearchQuery: '',
                     searchResults: [],
                     showCourseDropdown: false,
+                    // Teacher suggestions for Add Course modal
+                    teacherSuggestions: [],
+                    showTeacherDropdown: false,
+                    teacherSearchQuery: '',
                     totalCourses: 0,
                     busyHours: 0,
                     freeHours: 0,
@@ -1550,6 +1609,18 @@
                            this.newCourse.slot &&
                            this.newCourse.faculty && 
                            this.newCourse.venue;
+                },
+                getFilteredTeachers() {
+                    if (!this.teacherSearchQuery.trim()) {
+                        return this.teacherSuggestions;
+                    }
+                    
+                    const query = this.teacherSearchQuery.toLowerCase();
+                    return this.teacherSuggestions.filter(teacher => 
+                        teacher.faculty.toLowerCase().includes(query) ||
+                        teacher.slot.toLowerCase().includes(query) ||
+                        teacher.venue.toLowerCase().includes(query)
+                    );
                 }
             },
             mounted() {
@@ -1666,6 +1737,10 @@
                     this.courseSearchQuery = '';
                     this.searchResults = [];
                     this.showCourseDropdown = false;
+                    // Reset teacher suggestions
+                    this.teacherSearchQuery = '';
+                    this.teacherSuggestions = [];
+                    this.showTeacherDropdown = false;
                 },
 
                 async searchCourses() {
@@ -1695,6 +1770,50 @@
                     this.courseSearchQuery = course.title;
                     this.showCourseDropdown = false;
                     this.searchResults = [];
+                    
+                    // Load teacher suggestions for this course
+                    this.loadTeacherSuggestions(course.title);
+                },
+
+                async loadTeacherSuggestions(courseName) {
+                    console.log('Loading teacher suggestions for:', courseName);
+                    try {
+                        const response = await fetch(`/api/course-teachers?course=${encodeURIComponent(courseName)}`);
+                        const data = await response.json();
+                        
+                        console.log('API response:', data);
+                        
+                        if (data.teachers && data.teachers.length > 0) {
+                            this.teacherSuggestions = data.teachers;
+                            console.log(`Loaded ${data.teachers.length} teacher suggestions for ${courseName}`, this.teacherSuggestions);
+                        } else {
+                            this.teacherSuggestions = [];
+                            console.log('No teachers found for', courseName);
+                        }
+                    } catch (error) {
+                        console.error('Error loading teacher suggestions:', error);
+                        this.teacherSuggestions = [];
+                    }
+                },
+
+                selectTeacher(teacher) {
+                    this.newCourse.faculty = teacher.faculty;
+                    this.newCourse.slot = teacher.slot;
+                    this.newCourse.venue = teacher.venue;
+                    this.teacherSearchQuery = teacher.faculty;
+                    this.showTeacherDropdown = false;
+                },
+
+                searchTeachers() {
+                    console.log('searchTeachers called, query:', this.teacherSearchQuery, 'suggestions:', this.teacherSuggestions.length);
+                    
+                    if (!this.teacherSearchQuery.trim()) {
+                        this.showTeacherDropdown = this.teacherSuggestions.length > 0;
+                        return;
+                    }
+                    
+                    // Always show dropdown if we have suggestions, let the user see all options
+                    this.showTeacherDropdown = this.teacherSuggestions.length > 0;
                 },
 
 
@@ -1905,6 +2024,9 @@
                         teacherOptions: []
                     };
 
+                    // Auto-load teacher data for this course
+                    this.loadTeacherDataForCourse(courseName);
+
                     // Reset form
                     this.newCoursePreference = {
                         name: '',
@@ -1943,6 +2065,65 @@
                     this.newCourseSearchQuery = course.title;
                     this.showPreferenceCourseDropdown = false;
                     this.preferenceSearchResults = [];
+                    
+                    // Auto-load teacher data for this course
+                    this.loadTeacherDataForCourse(course.title);
+                },
+
+                async loadTeacherDataForCourse(courseName) {
+                    try {
+                        const response = await fetch(`/api/course-teachers?course=${encodeURIComponent(courseName)}`);
+                        const data = await response.json();
+                        
+                        if (data.teachers && data.teachers.length > 0) {
+                            // Auto-populate teacher options for this course
+                            const courseKey = courseName;
+                            
+                            // Create preference entry if it doesn't exist
+                            if (!this.preferences[courseKey]) {
+                                this.preferences[courseKey] = { 
+                                    priority: this.newCoursePreference.priority, 
+                                    teacherOptions: [] 
+                                };
+                            }
+                            
+                            // Add all available teachers as options (if not already added)
+                            data.teachers.forEach((teacher, index) => {
+                                // Check if this teacher option already exists
+                                const exists = this.preferences[courseKey].teacherOptions.some(option => 
+                                    option.faculty === teacher.faculty && 
+                                    option.slots === teacher.slot &&
+                                    option.venue === teacher.venue
+                                );
+                                
+                                if (!exists) {
+                                    this.preferences[courseKey].teacherOptions.push({
+                                        faculty: teacher.faculty,
+                                        slots: teacher.slot,
+                                        venue: teacher.venue,
+                                        priority: teacher.priority || (index + 1) // Give sequential priorities
+                                    });
+                                }
+                            });
+                            
+                            console.log(`Auto-loaded ${data.teachers.length} teacher options for ${courseName}`);
+                        }
+                    } catch (error) {
+                        console.error('Error loading teacher data:', error);
+                    }
+                },
+
+                addEnrolledCourseToPreferences(courseName) {
+                    // Create preference entry if it doesn't exist
+                    if (!this.preferences[courseName]) {
+                        this.preferences[courseName] = { 
+                            priority: 5, 
+                            teacherOptions: [] 
+                        };
+                        
+                        // Auto-load teacher data for this course
+                        this.loadTeacherDataForCourse(courseName);
+                    }
                 },
 
                 removeCoursePreference(courseName) {
@@ -1955,11 +2136,15 @@
                     if (!this.preferences[courseKey]) {
                         this.preferences[courseKey] = { priority: 5, teacherOptions: [] };
                     }
+                    
+                    // Calculate next priority based on existing teacher options
+                    const nextPriority = this.preferences[courseKey].teacherOptions.length + 1;
+                    
                     this.preferences[courseKey].teacherOptions.push({
                         faculty: '',
                         slots: '',
                         venue: '',
-                        priority: 5
+                        priority: nextPriority
                     });
                 },
 
