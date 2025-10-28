@@ -1721,7 +1721,27 @@
                     return ordered;
                 },
                 totalCourseCredits() {
-                    return this.courses.reduce((total, course) => total + course.credits, 0);
+                    // Calculate total credits from unique courses in the timetable
+                    const uniqueCourses = new Map(); // course name -> credits
+                    
+                    Object.values(this.timetable).forEach(day => {
+                        day.forEach(slot => {
+                            if (slot.course && slot.name) {
+                                // Store credits for each unique course name
+                                if (!uniqueCourses.has(slot.name)) {
+                                    uniqueCourses.set(slot.name, parseFloat(slot.credits) || 0);
+                                }
+                            }
+                        });
+                    });
+                    
+                    // Sum up all unique course credits
+                    let total = 0;
+                    uniqueCourses.forEach(credits => {
+                        total += credits;
+                    });
+                    
+                    return total;
                 },
                 theoryCourses() {
                     return this.courses.filter(course => course.type === 'Theory').length;
