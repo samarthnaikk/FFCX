@@ -908,6 +908,28 @@
         [data-theme="dark"] .dark-mode-toggle:hover {
             background: rgba(255, 255, 255, 0.9);
         }
+
+        /* Priority validation styles */
+        .is-invalid {
+            border-color: #dc3545 !important;
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+
+        .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        [data-theme="dark"] .is-invalid {
+            border-color: #f44336 !important;
+            background-color: rgba(244, 67, 54, 0.2) !important;
+        }
+
+        [data-theme="dark"] .invalid-feedback {
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -1449,7 +1471,9 @@
                                             <div>
                                                 <label class="form-label small mb-1">Subject Priority</label>
                                                 <input type="number" min="1" max="10" class="form-control form-control-sm" style="width: 80px;"
-                                                       v-model.number="pref.priority" title="Lower number = higher priority">
+                                                       v-model.number="pref.priority" title="Lower number = higher priority"
+                                                       @change="validateCoursePriority(courseName, pref.priority)"
+                                                       :class="{'is-invalid': hasCoursePriorityConflict(courseName, pref.priority)}">
                                                 <small class="text-muted" style="font-size: 0.7em;">1=highest</small>
                                             </div>
                                             <button class="btn btn-sm btn-outline-danger" @click="removeCoursePreference(courseName)">
@@ -1485,7 +1509,9 @@
                                                 <div class="col-md-2 mb-2">
                                                     <label class="form-label small">Priority</label>
                                                     <input v-model.number="option.priority" type="number" min="1" max="10" 
-                                                           class="form-control form-control-sm" title="Lower number = higher priority">
+                                                           class="form-control form-control-sm" title="Lower number = higher priority"
+                                                           @change="validateTeacherPriority(courseName, index, option.priority)"
+                                                           :class="{'is-invalid': hasTeacherPriorityConflict(courseName, index, option.priority)}">
                                                     <small class="form-text text-muted">1=highest</small>
                                                 </div>
                                                 <div class="col-md-1 mb-2 d-flex align-items-end">
@@ -2017,8 +2043,11 @@
                         return;
                     }
 
+                    // Get next available unique priority
+                    const uniquePriority = this.getNextAvailableCoursePriority();
+
                     this.preferences[courseName] = {
-                        priority: this.newCoursePreference.priority,
+                        priority: uniquePriority,
                         code: this.newCoursePreference.code.trim(),
                         type: this.newCoursePreference.type.trim(),
                         teacherOptions: []
@@ -2097,11 +2126,14 @@
                                 );
                                 
                                 if (!exists) {
+                                    // Get next unique priority for this teacher
+                                    const uniquePriority = this.getNextAvailableTeacherPriority(courseKey);
+                                    
                                     this.preferences[courseKey].teacherOptions.push({
                                         faculty: teacher.faculty,
                                         slots: teacher.slot,
                                         venue: teacher.venue,
-                                        priority: teacher.priority || (index + 1) // Give sequential priorities
+                                        priority: uniquePriority
                                     });
                                 }
                             });
@@ -2117,7 +2149,7 @@
                     // Create preference entry if it doesn't exist
                     if (!this.preferences[courseName]) {
                         this.preferences[courseName] = { 
-                            priority: 5, 
+                            priority: this.getNextAvailableCoursePriority(), 
                             teacherOptions: [] 
                         };
                         
@@ -2134,11 +2166,11 @@
 
                 addTeacherOption(courseKey) {
                     if (!this.preferences[courseKey]) {
-                        this.preferences[courseKey] = { priority: 5, teacherOptions: [] };
+                        this.preferences[courseKey] = { priority: this.getNextAvailableCoursePriority(), teacherOptions: [] };
                     }
                     
-                    // Calculate next priority based on existing teacher options
-                    const nextPriority = this.preferences[courseKey].teacherOptions.length + 1;
+                    // Get next available unique priority for this course's teachers
+                    const nextPriority = this.getNextAvailableTeacherPriority(courseKey);
                     
                     this.preferences[courseKey].teacherOptions.push({
                         faculty: '',
@@ -2152,6 +2184,63 @@
                     if (this.preferences[courseKey] && this.preferences[courseKey].teacherOptions) {
                         this.preferences[courseKey].teacherOptions.splice(index, 1);
                     }
+                },
+
+                // Priority validation functions
+                validateCoursePriority(courseName, priority) {
+                    if (this.hasCoursePriorityConflict(courseName, priority)) {
+                        alert(`Priority ${priority} is already used by another course. Please choose a different priority.`);
+                        // Reset to next available priority
+                        this.preferences[courseName].priority = this.getNextAvailableCoursePriority();
+                    }
+                },
+
+                validateTeacherPriority(courseName, teacherIndex, priority) {
+                    if (this.hasTeacherPriorityConflict(courseName, teacherIndex, priority)) {
+                        alert(`Priority ${priority} is already used by another teacher in this course. Please choose a different priority.`);
+                        // Reset to next available priority
+                        this.preferences[courseName].teacherOptions[teacherIndex].priority = this.getNextAvailableTeacherPriority(courseName);
+                    }
+                },
+
+                hasCoursePriorityConflict(currentCourseName, priority) {
+                    return Object.entries(this.preferences).some(([courseName, pref]) => 
+                        courseName !== currentCourseName && pref.priority === priority
+                    );
+                },
+
+                hasTeacherPriorityConflict(courseName, currentIndex, priority) {
+                    if (!this.preferences[courseName] || !this.preferences[courseName].teacherOptions) {
+                        return false;
+                    }
+                    
+                    return this.preferences[courseName].teacherOptions.some((option, index) => 
+                        index !== currentIndex && option.priority === priority
+                    );
+                },
+
+                getNextAvailableCoursePriority() {
+                    const usedPriorities = Object.values(this.preferences).map(pref => pref.priority);
+                    for (let i = 1; i <= 10; i++) {
+                        if (!usedPriorities.includes(i)) {
+                            return i;
+                        }
+                    }
+                    return 1; // Fallback
+                },
+
+                getNextAvailableTeacherPriority(courseName) {
+                    if (!this.preferences[courseName] || !this.preferences[courseName].teacherOptions) {
+                        return 1;
+                    }
+                    
+                    const usedPriorities = this.preferences[courseName].teacherOptions.map(option => option.priority);
+                    for (let i = 1; i <= 10; i++) {
+                        if (!usedPriorities.includes(i)) {
+                            return i;
+                        }
+                    }
+                    return 1; // Fallback
                 },
 
                 savePreferences() {
