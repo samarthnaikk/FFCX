@@ -1,0 +1,117 @@
+Advanced Competitive Coding - II
+Arabic
+Artificial Intelligence
+Basic Electrical and Electronics Engineering
+Basic Electrical and Electronics Engineering Lab
+Behavioral Economics
+Blockchain Architecture Design
+Blockchain and Distributed Ledger Technology
+Blockchain and Distributed Ledger Technology Lab
+Chinese I
+Cloud Computing
+Cognitive Psychology
+Compiler Design
+Compiler Design Lab
+Complex Variables and Linear Algebra
+Computer Architecture and Organization
+Computer Networks
+Computer Networks Lab
+Computer Programming: Java
+Contemporary India
+Cryptocurrency Technologies
+Cryptography and Network Security
+Cryptography and Network Security Lab
+Data Mining
+Data Mining Lab
+Data Privacy
+Data Structures and Algorithms
+Data Structures and Algorithms Lab
+Database Systems
+Database Systems Lab
+Deep Learning
+Deep Learning Lab
+Design and Analysis of Algorithms
+Design and Analysis of Algorithms Lab
+Design of Smart Cities
+Development Economics
+Differential Equations and Transforms
+Digital Forensics
+Digital Forensics Lab
+Digital Image Processing
+Digital Systems Design
+Digital Systems Design Lab
+Digital Watermarking and Steganography
+Discrete Mathematics and Graph Theory
+Economics of Money, Banking and Financial Markets
+Economics of Strategy
+Embedded Systems
+Engineering Chemistry
+Engineering Chemistry Lab
+Engineering Physics
+Essence of Traditional Knowledge
+Exploratory Data Analysis
+Exploratory Data Analysis Lab
+Financial Management
+Foundations of Blockchain Technology
+Foundations of Data Science
+French I
+Game Theory
+German I
+Global Warming
+Happiness and Well-being
+Indian Classical Music
+Indian Culture and Heritage
+Industrial Psychology
+Information Security
+International Economics
+International Relations
+Introduction to Bitcoin
+Introduction to Psychology
+IoT Architectures and Protocols
+Japanese I
+Machine Learning
+Machine Learning Lab
+Machine Vision
+Machine Vision Lab
+Macro Economics
+Malware Analysis
+Malware Analysis Lab
+Mass Communication
+Mathematics for Economic Analysis
+Micro Economics
+Microprocessors and Microcontrollers
+Microprocessors and Microcontrollers Lab
+Natural Disaster Mitigation and Management
+Natural Language Processing
+Operating Systems
+Operating Systems Lab
+Political Science
+Predictive Analytics
+Principles of Sociology
+Privacy and Security in IoT
+Probability and Statistics
+Probability and Statistics Lab
+Programming for Data Science
+Programming for Data Science Lab
+Programming for IoT Boards
+Programming for IoT Boards Lab
+Project - II / Internship
+Public Key Infrastructure and Trust Management
+Public Policy and Administration
+Quantitative Skills Practice II
+Reinforcement Learning
+Rural Development
+Social Work and Sustainability
+Software Engineering
+Software Engineering Lab
+Spanish I
+Structured and Object-Oriented Programming
+Structured and Object-Oriented Programming Lab
+Sustainability and Society
+Theory of Computation
+Urban Community Development
+Waste Management
+Water Resource Management
+Wearable Computing
+Web Application Security
+Web Programming
