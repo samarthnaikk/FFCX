@@ -930,6 +930,79 @@
         [data-theme="dark"] .invalid-feedback {
             color: #f44336;
         }
+
+        /* Drag and Drop styles */
+        .time-slot.draggable {
+            cursor: grab !important;
+        }
+
+        .time-slot.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            cursor: grabbing !important;
+            z-index: 1000;
+        }
+
+        .time-slot.drop-zone {
+            border: 2px dashed #007bff !important;
+            background-color: rgba(0, 123, 255, 0.1) !important;
+            transform: scale(1.02);
+        }
+
+        .time-slot.drop-invalid {
+            border: 2px dashed #dc3545 !important;
+            background-color: rgba(220, 53, 69, 0.1) !important;
+            position: relative;
+        }
+
+        .time-slot.drop-invalid::after {
+            content: "✗";
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .time-slot.drop-zone::after {
+            content: "✓";
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            color: #007bff;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .time-slot.occupied .drag-handle {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: #666;
+            cursor: grab;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .time-slot.occupied:hover .drag-handle {
+            opacity: 1;
+        }
+
+        [data-theme="dark"] .time-slot.drop-zone {
+            border-color: #4dabf7 !important;
+            background-color: rgba(77, 171, 247, 0.2) !important;
+        }
+
+        [data-theme="dark"] .time-slot.drop-invalid {
+            border-color: #f44336 !important;
+            background-color: rgba(244, 67, 54, 0.2) !important;
+        }
+
+        [data-theme="dark"] .time-slot.occupied .drag-handle {
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -1011,9 +1084,21 @@
                         <div class="day-header" v-text="day">
                         </div>
                         <div v-for="(slot, index) in schedule" :key="index" 
-                             :class="['time-slot', slot.course ? 'occupied' : 'free', slot.course && slot.slot && slot.slot.startsWith('L') ? 'lab-slot' : 'theory-slot']"
+                             :class="['time-slot', slot.course ? 'occupied' : 'free', slot.course && slot.slot && slot.slot.startsWith('L') ? 'lab-slot' : 'theory-slot', slot.course ? 'draggable' : '']"
                              @click="showSlotDetails(day, slot, index)"
-                             :title="slot.course ? `${slot.name} - ${slot.venue}` : 'Free Period'">
+                             :title="slot.course ? `${slot.name} - ${slot.venue}` : 'Free Period'"
+                             :draggable="slot.course ? 'true' : 'false'"
+                             @dragstart="startDrag($event, day, slot, index)"
+                             @dragover="onDragOver($event)"
+                             @dragenter="onDragEnter($event, day, slot, index)"
+                             @dragleave="onDragLeave($event)"
+                             @drop="onDrop($event, day, slot, index)"
+                             @dragend="onDragEnd($event)">
+                            
+                            <!-- Drag handle for occupied slots -->
+                            <div v-if="slot.course" class="drag-handle">
+                                <i class="fas fa-grip-vertical"></i>
+                            </div>
                             
                             <div class="time-label-compact">
                                 <div class="theory-time" v-text="slot.theory_time"></div>
@@ -1264,6 +1349,18 @@
                                                 <span v-text="course.type"></span> • 
                                                 <span v-text="course.credits"></span> credits
                                             </small>
+                                            <div class="mt-1" v-if="course.total_options > 0">
+                                                <small class="text-primary">
+                                                    <i class="fas fa-users"></i> <span v-text="course.available_faculty ? course.available_faculty.length : 0"></span> faculty • 
+                                                    <i class="fas fa-clock"></i> <span v-text="course.available_slots ? course.available_slots.length : 0"></span> slots • 
+                                                    <i class="fas fa-map-marker-alt"></i> <span v-text="course.available_venues ? course.available_venues.length : 0"></span> venues
+                                                </small>
+                                            </div>
+                                            <div class="mt-1" v-else>
+                                                <small class="text-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i> No teacher data - manual entry required
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1302,7 +1399,7 @@
                                     <label class="form-label">Faculty Name</label>
                                     <div class="position-relative">
                                         <input v-model="teacherSearchQuery" 
-                                               @input="newCourse.faculty = teacherSearchQuery; searchTeachers()" 
+                                               @input="handleTeacherInput()" 
                                                @focus="showTeacherDropdown = teacherSuggestions.length > 0"
                                                type="text" class="form-control" required 
                                                placeholder="Enter faculty name or search suggestions"
@@ -1604,7 +1701,13 @@
                     loadingExport: false,
                     loadingImport: false,
                     copyStatus: 'Copy to clipboard',
-                    copyIcon: 'fas fa-copy'
+                    copyIcon: 'fas fa-copy',
+                    // Drag and Drop properties
+                    draggedCourse: null,
+                    draggedSlot: null,
+                    draggedDay: null,
+                    draggedIndex: -1,
+                    isDragging: false
                 }
             },
             computed: {
@@ -1631,10 +1734,11 @@
                     return this.selectedSlot.available_slots.split('/');
                 },
                 isFormValid() {
-                    return this.newCourse.subject_name && 
-                           this.newCourse.slot &&
-                           this.newCourse.faculty && 
-                           this.newCourse.venue;
+                    // More flexible validation - check for content rather than exact matching
+                    return this.newCourse.subject_name.trim() && 
+                           this.newCourse.faculty.trim() &&
+                           this.newCourse.slot.trim() &&
+                           this.newCourse.venue.trim();
                 },
                 getFilteredTeachers() {
                     if (!this.teacherSearchQuery.trim()) {
@@ -1811,14 +1915,24 @@
                         
                         if (data.teachers && data.teachers.length > 0) {
                             this.teacherSuggestions = data.teachers;
+                            this.showTeacherDropdown = true; // Show dropdown when teachers are available
                             console.log(`Loaded ${data.teachers.length} teacher suggestions for ${courseName}`, this.teacherSuggestions);
                         } else {
                             this.teacherSuggestions = [];
+                            this.showTeacherDropdown = false;
                             console.log('No teachers found for', courseName);
+                            console.warn(`No teacher data available for course: "${courseName}". Check if the course name matches all_teachers.csv`);
+                            
+                            // Show user-friendly message
+                            setTimeout(() => {
+                                const message = `No teacher data available for "${courseName}". You can still add the course manually by entering teacher, slot, and venue information.`;
+                                console.info(message);
+                            }, 100);
                         }
                     } catch (error) {
                         console.error('Error loading teacher suggestions:', error);
                         this.teacherSuggestions = [];
+                        this.showTeacherDropdown = false;
                     }
                 },
 
@@ -1842,11 +1956,32 @@
                     this.showTeacherDropdown = this.teacherSuggestions.length > 0;
                 },
 
+                handleTeacherInput() {
+                    this.newCourse.faculty = this.teacherSearchQuery;
+                    this.searchTeachers();
+                },
+
 
 
                 async addCourse() {
-                    if (!this.newCourse.subject_name || !this.newCourse.slot || !this.newCourse.faculty || !this.newCourse.venue) {
-                        alert('Please fill in all fields');
+                    // More flexible validation - allow manual entry
+                    if (!this.newCourse.subject_name) {
+                        alert('Please select a course');
+                        return;
+                    }
+                    
+                    if (!this.newCourse.faculty) {
+                        alert('Please enter faculty name');
+                        return;
+                    }
+                    
+                    if (!this.newCourse.slot) {
+                        alert('Please enter slot (e.g., A1, B2+L31)');
+                        return;
+                    }
+                    
+                    if (!this.newCourse.venue) {
+                        alert('Please enter venue');
                         return;
                     }
 
@@ -2287,6 +2422,177 @@
                     } catch (error) {
                         console.error('Error optimizing timetable:', error);
                         alert('Error optimizing timetable');
+                    }
+                },
+
+                // Drag and Drop methods
+                startDrag(event, day, slot, index) {
+                    if (!slot.course) return; // Can't drag empty slots
+                    
+                    this.draggedCourse = slot;
+                    this.draggedSlot = slot;
+                    this.draggedDay = day;
+                    this.draggedIndex = index;
+                    this.isDragging = true;
+                    
+                    // Set drag data
+                    event.dataTransfer.setData('text/plain', JSON.stringify({
+                        day,
+                        index,
+                        course: slot
+                    }));
+                    event.dataTransfer.effectAllowed = 'move';
+                    
+                    // Add dragging class after a brief delay to avoid flickering
+                    setTimeout(() => {
+                        event.target.classList.add('dragging');
+                    }, 1);
+                },
+
+                onDragOver(event) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                },
+
+                onDragEnter(event, day, slot, index) {
+                    if (!this.isDragging) return;
+                    
+                    event.preventDefault();
+                    const targetElement = event.currentTarget;
+                    
+                    // Check if this is a valid drop target
+                    if (this.canDropCourse(day, slot, index)) {
+                        targetElement.classList.add('drop-zone');
+                        targetElement.classList.remove('drop-invalid');
+                        targetElement.title = `Drop ${this.draggedCourse.name} here`;
+                    } else {
+                        targetElement.classList.add('drop-invalid');
+                        targetElement.classList.remove('drop-zone');
+                        const errorMessage = this.getDropErrorMessage(day, slot, index);
+                        targetElement.title = `Cannot drop: ${errorMessage}`;
+                    }
+                },
+
+                onDragLeave(event) {
+                    const targetElement = event.currentTarget;
+                    targetElement.classList.remove('drop-zone', 'drop-invalid');
+                    targetElement.title = targetElement.getAttribute('data-original-title') || '';
+                },
+
+                onDrop(event, targetDay, targetSlot, targetIndex) {
+                    event.preventDefault();
+                    
+                    if (!this.isDragging || !this.draggedCourse) return;
+                    
+                    const targetElement = event.currentTarget;
+                    targetElement.classList.remove('drop-zone', 'drop-invalid');
+                    
+                    // Check if this is a valid drop
+                    if (!this.canDropCourse(targetDay, targetSlot, targetIndex)) {
+                        const errorMessage = this.getDropErrorMessage(targetDay, targetSlot, targetIndex);
+                        alert(`Cannot move course here: ${errorMessage}`);
+                        this.endDrag();
+                        return;
+                    }
+                    
+                    // Don't drop on the same slot
+                    if (this.draggedDay === targetDay && this.draggedIndex === targetIndex) {
+                        this.endDrag();
+                        return;
+                    }
+                    
+                    this.moveCourse(targetDay, targetIndex);
+                },
+
+                onDragEnd(event) {
+                    this.endDrag();
+                    event.target.classList.remove('dragging');
+                },
+
+                endDrag() {
+                    this.isDragging = false;
+                    this.draggedCourse = null;
+                    this.draggedSlot = null;
+                    this.draggedDay = null;
+                    this.draggedIndex = -1;
+                    
+                    // Clean up all drag classes
+                    document.querySelectorAll('.drop-zone, .drop-invalid, .dragging').forEach(el => {
+                        el.classList.remove('drop-zone', 'drop-invalid', 'dragging');
+                    });
+                },
+
+                canDropCourse(targetDay, targetSlot, targetIndex) {
+                    if (!this.draggedCourse) return false;
+                    
+                    // Can't drop on occupied slots (unless moving to same slot)
+                    if (targetSlot.course && !(this.draggedDay === targetDay && this.draggedIndex === targetIndex)) {
+                        return false;
+                    }
+                    
+                    // Check if the course can fit in this time slot
+                    const draggedCourse = this.draggedCourse;
+                    const targetAvailableSlots = targetSlot.available_slots || '';
+                    
+                    // Check if the course's slot is available in this time period
+                    if (draggedCourse.slot && !targetAvailableSlots.includes(draggedCourse.slot)) {
+                        return false;
+                    }
+                    
+                    return true;
+                },
+
+                getDropErrorMessage(targetDay, targetSlot, targetIndex) {
+                    if (!this.draggedCourse) return "No course selected";
+                    
+                    // Check if dropping on occupied slot
+                    if (targetSlot.course && !(this.draggedDay === targetDay && this.draggedIndex === targetIndex)) {
+                        return `Cannot drop here: ${targetSlot.name} is already scheduled at this time`;
+                    }
+                    
+                    // Check slot compatibility
+                    const draggedCourse = this.draggedCourse;
+                    const targetAvailableSlots = targetSlot.available_slots || '';
+                    
+                    if (draggedCourse.slot && !targetAvailableSlots.includes(draggedCourse.slot)) {
+                        return `Cannot drop here: Slot ${draggedCourse.slot} is not available at this time. Available slots: ${targetAvailableSlots}`;
+                    }
+                    
+                    return "Drop is allowed";
+                },
+
+                async moveCourse(targetDay, targetIndex) {
+                    if (!this.draggedCourse) return;
+                    
+                    try {
+                        const response = await fetch('/api/move-course', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                from_day: this.draggedDay,
+                                from_index: this.draggedIndex,
+                                to_day: targetDay,
+                                to_index: targetIndex,
+                                course: this.draggedCourse
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            // Update the local timetable
+                            await this.fetchTimetable();
+                            this.calculateStats();
+                        } else {
+                            alert('Error moving course: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error moving course:', error);
+                        alert('Error moving course');
+                    } finally {
+                        this.endDrag();
                     }
                 },
 

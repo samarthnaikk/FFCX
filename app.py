@@ -232,36 +232,104 @@ def get_conflict_details(slot1, slot2):
     
     return conflicts
 
-def load_courses_from_csv():
-    """Load courses from courses.csv file"""
+def load_courses_from_ref2():
+    """Load courses from ref2.txt file and enrich with ALL details from all_teachers.csv"""
     courses = []
-    csv_path = os.path.join(os.path.dirname(__file__), 'courses.csv')
+    txt_path = os.path.join(os.path.dirname(__file__), 'ref2.txt')
     
-    if not os.path.exists(csv_path):
+    if not os.path.exists(txt_path):
+        print("Warning: ref2.txt not found")
         return courses
     
     try:
-        with open(csv_path, 'r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                # Skip empty rows or rows without course title
-                if not row.get('Course Title', '').strip():
+        with open(txt_path, 'r', encoding='utf-8') as file:
+            for line_num, line in enumerate(file, 1):
+                course_name = line.strip()
+                # Skip empty lines
+                if not course_name:
                     continue
                     
+                # Default values
+                course_code = ""
+                course_type = "Theory Only"
+                credits = 3.0
+                available_slots = []
+                available_venues = []
+                available_faculty = []
+                
+                # Extract ALL details from TEACHERS_BY_COURSE
+                if course_name in TEACHERS_BY_COURSE:
+                    teacher_data = TEACHERS_BY_COURSE[course_name]
+                    course_code = teacher_data.get('course_code', '')
+                    teachers = teacher_data.get('teachers', [])
+                    
+                    if teachers:
+                        # Collect all unique slots, venues, and faculty
+                        slots_set = set()
+                        venues_set = set()
+                        faculty_set = set()
+                        
+                        for teacher in teachers:
+                            slot = teacher.get('slot', '').strip()
+                            venue = teacher.get('venue', '').strip()
+                            faculty = teacher.get('faculty', '').strip()
+                            
+                            if slot:
+                                slots_set.add(slot)
+                            if venue:
+                                venues_set.add(venue)
+                            if faculty:
+                                faculty_set.add(faculty)
+                        
+                        available_slots = sorted(list(slots_set))
+                        available_venues = sorted(list(venues_set))
+                        available_faculty = sorted(list(faculty_set))
+                        
+                        # Determine course type based on slot analysis
+                        has_lab = any('L' in slot for slot in available_slots)
+                        has_theory = any('L' not in slot for slot in available_slots)
+                        
+                        if has_lab and has_theory:
+                            course_type = "Embedded Theory and Lab"
+                        elif has_lab:
+                            course_type = "Lab Only"
+                        else:
+                            course_type = "Theory Only"
+                        
+                        # Estimate credits based on type
+                        if course_type == "Embedded Theory and Lab":
+                            credits = 4.0
+                        elif course_type == "Lab Only":
+                            credits = 1.0
+                        else:
+                            credits = 3.0
+                
                 course = {
-                    'course_code': row.get('Course Code', '').strip(),
-                    'title': row.get('Course Title', '').strip(),
-                    'type': row.get('Course Type', '').strip(),
-                    'credits': float(row.get('Credits', 0))
+                    'course_code': course_code,
+                    'title': course_name,
+                    'type': course_type,
+                    'credits': credits,
+                    'available_slots': available_slots,
+                    'available_venues': available_venues,
+                    'available_faculty': available_faculty,
+                    'total_options': len(TEACHERS_BY_COURSE.get(course_name, {}).get('teachers', []))
                 }
                 courses.append(course)
+                
+        print(f"Loaded {len(courses)} courses from ref2.txt with detailed information")
+        
+        # Log some statistics
+        courses_with_data = [c for c in courses if c['total_options'] > 0]
+        print(f"Courses with teacher data: {len(courses_with_data)}/{len(courses)}")
+        
     except Exception as e:
-        print(f"Error loading courses.csv: {e}")
+        print(f"Error loading ref2.txt: {e}")
     
     return courses
 
 # Load courses at startup
-AVAILABLE_COURSES = load_courses_from_csv()
+# This will be called after TEACHERS_BY_COURSE is loaded
+AVAILABLE_COURSES = []
 
 def load_teachers_from_csv():
     """Load teacher data from all_teachers.csv file and organize by course"""
@@ -321,6 +389,10 @@ def load_teachers_from_csv():
 
 # Load teachers at startup
 TEACHERS_BY_COURSE = load_teachers_from_csv()
+print(f"Loaded {len(TEACHERS_BY_COURSE)} courses with teacher data")
+
+# Now load courses from ref2.txt and enrich with teacher data
+AVAILABLE_COURSES = load_courses_from_ref2()
 
 @app.route('/')
 def index():
@@ -411,6 +483,42 @@ def get_courses():
         courses.append(course_data)
     
     return jsonify(courses)
+
+@app.route('/api/course-details')
+def get_course_details():
+    """API endpoint to get detailed course information from ref2.txt and all_teachers.csv"""
+    return jsonify(AVAILABLE_COURSES)
+
+@app.route('/api/course-options/<course_name>')
+def get_course_options(course_name):
+    """API endpoint to get all available options (faculty, slots, venues) for a specific course"""
+    course_name = course_name.strip()
+    
+    # Find the course in AVAILABLE_COURSES
+    course_details = None
+    for course in AVAILABLE_COURSES:
+        if course['title'].lower() == course_name.lower():
+            course_details = course
+            break
+    
+    if not course_details:
+        return jsonify({'error': 'Course not found', 'course': course_name})
+    
+    # Get teacher options from TEACHERS_BY_COURSE
+    teacher_options = []
+    if course_name in TEACHERS_BY_COURSE:
+        teacher_options = TEACHERS_BY_COURSE[course_name].get('teachers', [])
+    
+    return jsonify({
+        'course': course_details,
+        'teacher_options': teacher_options,
+        'summary': {
+            'total_faculty': len(course_details['available_faculty']),
+            'total_slots': len(course_details['available_slots']),
+            'total_venues': len(course_details['available_venues']),
+            'total_combinations': len(teacher_options)
+        }
+    })
 
 @app.route('/api/validate-slots')
 def validate_slots():
@@ -704,24 +812,58 @@ def get_course_teachers():
     """API endpoint to get all teachers and slots for a specific course"""
     course_name = request.args.get('course', '').strip()
     
+    print(f"API: Looking for teachers for course: '{course_name}'")
+    print(f"Available courses: {list(TEACHERS_BY_COURSE.keys())[:5]}...")  # Show first 5
+    
     if not course_name:
         return jsonify({'teachers': []})
-    
+
     # Find exact match first
     if course_name in TEACHERS_BY_COURSE:
+        print(f"Found exact match for '{course_name}' with {len(TEACHERS_BY_COURSE[course_name]['teachers'])} teachers")
         return jsonify(TEACHERS_BY_COURSE[course_name])
-    
+
     # If no exact match, try partial match
     for course_key, course_data in TEACHERS_BY_COURSE.items():
         if course_name.lower() in course_key.lower():
+            print(f"Found partial match: '{course_name}' matches '{course_key}' with {len(course_data['teachers'])} teachers")
             return jsonify(course_data)
-    
-    return jsonify({'teachers': []})
 
-@app.route('/api/all-teachers')
+    # Try to find by course code (extract code from course name if present)
+    # Look for patterns like "BCHY101L" or similar course codes
+    import re
+    code_pattern = r'([A-Z]{4}\d{3}[A-Z]?)'
+    code_match = re.search(code_pattern, course_name.upper())
+    if code_match:
+        course_code = code_match.group(1)
+        print(f"Trying to find course by code: {course_code}")
+        for course_key, course_data in TEACHERS_BY_COURSE.items():
+            if course_data.get('course_code') == course_code:
+                print(f"Found by course code: '{course_code}' matches '{course_key}' with {len(course_data['teachers'])} teachers")
+                return jsonify(course_data)
+
+    print(f"No match found for course: '{course_name}'")
+    return jsonify({'teachers': []})@app.route('/api/all-teachers')
 def get_all_teachers():
     """API endpoint to get all teacher data organized by course"""
     return jsonify(TEACHERS_BY_COURSE)
+
+@app.route('/api/debug-teachers')
+def debug_teachers():
+    """Debug endpoint to see what courses have teacher data"""
+    debug_info = {
+        'total_courses': len(TEACHERS_BY_COURSE),
+        'courses': []
+    }
+    
+    for course_name, course_data in list(TEACHERS_BY_COURSE.items())[:10]:  # Show first 10
+        debug_info['courses'].append({
+            'name': course_name,
+            'code': course_data.get('course_code', ''),
+            'teacher_count': len(course_data.get('teachers', []))
+        })
+    
+    return jsonify(debug_info)
 
 @app.route('/api/export-timetable')
 def export_timetable():
@@ -1061,6 +1203,121 @@ def optimize_timetable():
             'assigned': assigned_courses,
             'failed': failed_courses,
             'clashes': clashes
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/move-course', methods=['POST'])
+def move_course():
+    """Move a course from one time slot to another"""
+    try:
+        data = request.get_json()
+        from_day = data.get('from_day')
+        from_index = int(data.get('from_index'))
+        to_day = data.get('to_day')
+        to_index = int(data.get('to_index'))
+        course_data = data.get('course')
+        
+        # Validate input data
+        if not all([from_day, to_day, course_data]):
+            return jsonify({'success': False, 'message': 'Missing required data'}), 400
+        
+        if from_day not in TIMETABLE_TEMPLATE or to_day not in TIMETABLE_TEMPLATE:
+            return jsonify({'success': False, 'message': 'Invalid day specified'}), 400
+        
+        if (from_index < 0 or from_index >= len(TIMETABLE_TEMPLATE[from_day]) or 
+            to_index < 0 or to_index >= len(TIMETABLE_TEMPLATE[to_day])):
+            return jsonify({'success': False, 'message': 'Invalid time slot index'}), 400
+        
+        # Get source and target slots
+        source_slot = TIMETABLE_TEMPLATE[from_day][from_index]
+        target_slot = TIMETABLE_TEMPLATE[to_day][to_index]
+        
+        # Verify source slot has the expected course
+        if not source_slot.get('course') or source_slot.get('name') != course_data.get('name'):
+            return jsonify({'success': False, 'message': 'Source slot does not match expected course'}), 400
+        
+        # Check if target slot is occupied (unless moving to same slot)
+        if target_slot.get('course') and not (from_day == to_day and from_index == to_index):
+            return jsonify({'success': False, 'message': 'Target slot is already occupied'}), 400
+        
+        # Check if the course can fit in the target slot (slot compatibility)
+        course_slot = course_data.get('slot')
+        target_available_slots = target_slot.get('available_slots', '')
+        
+        if course_slot and not course_slot in target_available_slots.split('/'):
+            return jsonify({'success': False, 'message': f'Course slot {course_slot} is not available in this time period'}), 400
+        
+        # Check for slot conflicts before moving
+        temp_course_slot = source_slot.get('slot')
+        if temp_course_slot:
+            # Clear the source slot temporarily to check conflicts
+            TIMETABLE_TEMPLATE[from_day][from_index].update({
+                'course': '',
+                'name': '',
+                'faculty': '',
+                'venue': '',
+                'slot': '',
+                'course_code': '',
+                'course_type': '',
+                'credits': 0
+            })
+            
+            # Check if moving to target would cause conflicts
+            conflicts = []
+            if temp_course_slot in SLOT_CONFLICTS:
+                for conflict_slot in SLOT_CONFLICTS[temp_course_slot]:
+                    # Check if any existing course uses the conflicting slot
+                    for day_name, day_schedule in TIMETABLE_TEMPLATE.items():
+                        for slot_idx, slot in enumerate(day_schedule):
+                            if (slot.get('slot') == conflict_slot and slot.get('course') and 
+                                not (day_name == to_day and slot_idx == to_index)):
+                                conflicts.append(f"Slot {temp_course_slot} conflicts with existing slot {conflict_slot}")
+            
+            if conflicts:
+                # Restore the source slot since move is invalid
+                TIMETABLE_TEMPLATE[from_day][from_index].update({
+                    'course': course_data.get('course', ''),
+                    'name': course_data.get('name', ''),
+                    'faculty': course_data.get('faculty', ''),
+                    'venue': course_data.get('venue', ''),
+                    'slot': course_data.get('slot', ''),
+                    'course_code': course_data.get('course_code', ''),
+                    'course_type': course_data.get('course_type', ''),
+                    'credits': course_data.get('credits', 0)
+                })
+                return jsonify({'success': False, 'message': f'Move would cause conflicts: {"; ".join(conflicts)}'}), 400
+        
+        # Perform the move
+        # Clear source slot (already cleared above if we had conflicts check)
+        if not temp_course_slot:  # Only clear if we didn't already clear it
+            TIMETABLE_TEMPLATE[from_day][from_index].update({
+                'course': '',
+                'name': '',
+                'faculty': '',
+                'venue': '',
+                'slot': '',
+                'course_code': '',
+                'course_type': '',
+                'credits': 0
+            })
+        
+        # Update target slot
+        TIMETABLE_TEMPLATE[to_day][to_index].update({
+            'course': course_data.get('course', ''),
+            'name': course_data.get('name', ''),
+            'faculty': course_data.get('faculty', ''),
+            'venue': course_data.get('venue', ''),
+            'slot': course_data.get('slot', ''),
+            'course_code': course_data.get('course_code', ''),
+            'course_type': course_data.get('course_type', ''),
+            'credits': course_data.get('credits', 0)
+        })
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully moved {course_data.get("name")} from {from_day} to {to_day}'
         })
         
     except Exception as e:
