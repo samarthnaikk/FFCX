@@ -5,7 +5,7 @@ __pycache__/
 tt.txt
 # C extensions
 *.so
-ref*.*
+
 # Distribution / packaging
 .Python
 build/
