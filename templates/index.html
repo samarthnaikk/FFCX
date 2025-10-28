@@ -1383,9 +1383,9 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Credits</label>
-                                        <input v-model="newCourse.credits" type="number" step="0.5" class="form-control"
-                                               placeholder="Enter credits">
-                                        <small class="form-text text-muted">Auto-filled when you select a course above</small>
+                                        <input v-model.number="newCourse.credits" type="number" step="0.5" min="0" max="10" class="form-control"
+                                               placeholder="Enter credits (0.5 - 10)" required>
+                                        <small class="form-text text-muted">Auto-filled when you select a course above. Typical: 1-6 credits</small>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Slot(s)</label>

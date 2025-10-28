@@ -263,6 +263,11 @@ def load_courses_from_ref2():
                     course_code = teacher_data.get('course_code', '')
                     teachers = teacher_data.get('teachers', [])
                     
+                    # Get credits from CSV data if available
+                    csv_credits = teacher_data.get('credits', None)
+                    if csv_credits is not None:
+                        credits = float(csv_credits)
+                    
                     if teachers:
                         # Collect all unique slots, venues, and faculty
                         slots_set = set()
@@ -296,13 +301,15 @@ def load_courses_from_ref2():
                         else:
                             course_type = "Theory Only"
                         
-                        # Estimate credits based on type
-                        if course_type == "Embedded Theory and Lab":
-                            credits = 4.0
-                        elif course_type == "Lab Only":
-                            credits = 1.0
-                        else:
-                            credits = 3.0
+                        # Only estimate credits if not loaded from CSV
+                        if csv_credits is None:
+                            # Estimate credits based on type (fallback)
+                            if course_type == "Embedded Theory and Lab":
+                                credits = 4.0
+                            elif course_type == "Lab Only":
+                                credits = 1.0
+                            else:
+                                credits = 3.0
                 
                 course = {
                     'course_code': course_code,
@@ -339,6 +346,34 @@ def load_teachers_from_csv():
     if not os.path.exists(csv_path):
         return teachers_by_course
     
+    # Load credits from courses.csv
+    credits_by_course_code = {}
+    courses_csv_path = os.path.join(os.path.dirname(__file__), 'courses.csv')
+    if os.path.exists(courses_csv_path):
+        try:
+            with open(courses_csv_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    course_code = row.get('Course Code', '').strip()
+                    credits_str = row.get('Credits', '').strip()
+                    if course_code and credits_str:
+                        try:
+                            credits_by_course_code[course_code] = float(credits_str)
+                        except (ValueError, TypeError):
+                            pass
+            print(f"Loaded credits for {len(credits_by_course_code)} courses from courses.csv")
+        except Exception as e:
+            print(f"Warning: Could not load credits from courses.csv: {e}")
+    
+    # Map foreign language codes to BFLE200L (Foreign Language basket course - 2.0 credits)
+    foreign_language_credits = credits_by_course_code.get('BFLE200L', 2.0)
+    foreign_language_codes = ['BARB101L', 'BCHI101L', 'BESP101L', 'BFRE101L', 'BGER101L', 'BJAP101L']
+    for lang_code in foreign_language_codes:
+        if lang_code not in credits_by_course_code:
+            credits_by_course_code[lang_code] = foreign_language_credits
+    
+    print(f"Mapped {len(foreign_language_codes)} foreign language courses to {foreign_language_credits} credits")
+    
     try:
         with open(csv_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
@@ -354,11 +389,15 @@ def load_teachers_from_csv():
                 venue = row.get('Venue', '').strip()
                 course_type = row.get('Type', '').strip()
                 
+                # Get credits from courses.csv if available
+                credits = credits_by_course_code.get(course_code, None)
+                
                 # Create course entry if it doesn't exist
                 if course_name not in teachers_by_course:
                     teachers_by_course[course_name] = {
                         'course_code': course_code,
                         'course_name': course_name,
+                        'credits': credits,  # Store credits at course level
                         'teachers': []
                     }
                 
@@ -701,11 +740,20 @@ def add_course():
         course_type = data.get('course_type', '').strip()
         credits = data.get('credits', 0)
         
-        # Convert credits to float if it's a string
+        # Convert credits to float and validate
         try:
             credits = float(credits) if credits else 0
+            # Validate credits range (typical university courses: 0.5 to 10 credits)
+            if credits < 0 or credits > 10:
+                return jsonify({
+                    'success': False,
+                    'message': f'Invalid credits value: {credits}. Must be between 0 and 10.'
+                }), 400
         except (ValueError, TypeError):
-            credits = 0
+            return jsonify({
+                'success': False,
+                'message': f'Invalid credits format: {credits}. Must be a number.'
+            }), 400
         
         # Fill all available instances of all requested slots
         filled_slots = []
