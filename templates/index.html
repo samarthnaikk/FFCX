@@ -1739,18 +1739,6 @@
                            this.newCourse.faculty.trim() &&
                            this.newCourse.slot.trim() &&
                            this.newCourse.venue.trim();
-                },
-                getFilteredTeachers() {
-                    if (!this.teacherSearchQuery.trim()) {
-                        return this.teacherSuggestions;
-                    }
-                    
-                    const query = this.teacherSearchQuery.toLowerCase();
-                    return this.teacherSuggestions.filter(teacher => 
-                        teacher.faculty.toLowerCase().includes(query) ||
-                        teacher.slot.toLowerCase().includes(query) ||
-                        teacher.venue.toLowerCase().includes(query)
-                    );
                 }
             },
             mounted() {
@@ -1776,6 +1764,19 @@
                 });
             },
             methods: {
+                getFilteredTeachers() {
+                    if (!this.teacherSearchQuery.trim()) {
+                        return this.teacherSuggestions;
+                    }
+                    
+                    const query = this.teacherSearchQuery.toLowerCase();
+                    return this.teacherSuggestions.filter(teacher => 
+                        teacher.faculty.toLowerCase().includes(query) ||
+                        teacher.slot.toLowerCase().includes(query) ||
+                        teacher.venue.toLowerCase().includes(query)
+                    );
+                },
+                
                 async fetchTimetable() {
                     try {
                         const response = await fetch('/api/timetable');
@@ -1915,19 +1916,12 @@
                         
                         if (data.teachers && data.teachers.length > 0) {
                             this.teacherSuggestions = data.teachers;
-                            this.showTeacherDropdown = true; // Show dropdown when teachers are available
+                            this.showTeacherDropdown = true;
                             console.log(`Loaded ${data.teachers.length} teacher suggestions for ${courseName}`, this.teacherSuggestions);
                         } else {
                             this.teacherSuggestions = [];
                             this.showTeacherDropdown = false;
                             console.log('No teachers found for', courseName);
-                            console.warn(`No teacher data available for course: "${courseName}". Check if the course name matches all_teachers.csv`);
-                            
-                            // Show user-friendly message
-                            setTimeout(() => {
-                                const message = `No teacher data available for "${courseName}". You can still add the course manually by entering teacher, slot, and venue information.`;
-                                console.info(message);
-                            }, 100);
                         }
                     } catch (error) {
                         console.error('Error loading teacher suggestions:', error);
