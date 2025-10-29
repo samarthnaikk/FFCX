@@ -1112,6 +1112,34 @@ def import_v1_format(encoded_data):
     except Exception as e:
         raise Exception(f'V1 format error: {str(e)}')
 
+def validate_priority_conflicts(preferences):
+    """Validate that there are no duplicate priorities in courses or teachers within same course"""
+    errors = []
+    
+    # Check for duplicate course priorities
+    course_priorities = {}
+    for course_name, pref in preferences.items():
+        priority = pref.get('priority', 5)
+        if priority in course_priorities:
+            errors.append(f'Courses "{course_priorities[priority]}" and "{course_name}" both have priority {priority}')
+        else:
+            course_priorities[priority] = course_name
+    
+    # Check for duplicate teacher priorities within each course
+    for course_name, pref in preferences.items():
+        teacher_options = pref.get('teacherOptions', [])
+        if len(teacher_options) > 1:
+            teacher_priorities = {}
+            for i, option in enumerate(teacher_options):
+                priority = option.get('priority', 5)
+                faculty = option.get('faculty', f'Teacher {i+1}')
+                if priority in teacher_priorities:
+                    errors.append(f'Course "{course_name}": Teachers "{teacher_priorities[priority]}" and "{faculty}" both have priority {priority}')
+                else:
+                    teacher_priorities[priority] = faculty
+    
+    return errors
+
 @app.route('/api/optimize-timetable', methods=['POST'])
 def optimize_timetable():
     """Optimize timetable based on teacher preferences and priorities"""
@@ -1121,6 +1149,14 @@ def optimize_timetable():
         
         if not preferences:
             return jsonify({'success': False, 'message': 'No preferences provided'}), 400
+        
+        # Validate priority conflicts before optimization
+        validation_errors = validate_priority_conflicts(preferences)
+        if validation_errors:
+            return jsonify({
+                'success': False, 
+                'message': f'Priority conflicts detected: {"; ".join(validation_errors)}'
+            }), 400
         
         # Simple optimization algorithm
         # Clear current timetable

@@ -1468,6 +1468,17 @@
                                 <br><strong>Priority System:</strong> Lower numbers = Higher priority (1 = highest, 10 = lowest)
                             </p>
 
+                            <!-- Priority Conflicts Warning -->
+                            <div v-if="validateAllPriorities().length > 0" class="alert alert-danger mb-4">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Priority Conflicts Detected
+                                </h6>
+                                <p class="mb-2">The following conflicts must be resolved before optimizing:</p>
+                                <ul class="mb-0">
+                                    <li v-for="error in validateAllPriorities()" :key="error" class="small">{{ error }}</li>
+                                </ul>
+                            </div>
+
                             <!-- Add New Course Section -->
                             <div class="card mb-4 border-primary">
                                 <div class="card-header bg-light">
@@ -1631,9 +1642,17 @@
                             <button type="button" class="btn btn-success" @click="savePreferences">
                                 <i class="fas fa-save me-1"></i> Save Preferences
                             </button>
-                            <button type="button" class="btn btn-primary" @click="optimizeTimetable">
+                            <button type="button" 
+                                    class="btn btn-primary" 
+                                    @click="optimizeTimetable"
+                                    :disabled="!canOptimize()"
+                                    :title="canOptimize() ? 'Generate optimized timetable' : 'Fix priority conflicts before optimizing'">
                                 <i class="fas fa-magic me-1"></i> Optimize Timetable
                             </button>
+                            <div v-if="!canOptimize()" class="text-danger mt-2 small">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Fix priority conflicts before optimizing
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2341,7 +2360,9 @@
                         alert(`Priority ${priority} is already used by another course. Please choose a different priority.`);
                         // Reset to next available priority
                         this.preferences[courseName].priority = this.getNextAvailableCoursePriority();
+                        return false;
                     }
+                    return true;
                 },
 
                 validateTeacherPriority(courseName, teacherIndex, priority) {
@@ -2349,7 +2370,9 @@
                         alert(`Priority ${priority} is already used by another teacher in this course. Please choose a different priority.`);
                         // Reset to next available priority
                         this.preferences[courseName].teacherOptions[teacherIndex].priority = this.getNextAvailableTeacherPriority(courseName);
+                        return false;
                     }
+                    return true;
                 },
 
                 hasCoursePriorityConflict(currentCourseName, priority) {
@@ -2392,12 +2415,55 @@
                     return 1; // Fallback
                 },
 
+                validateAllPriorities() {
+                    const errors = [];
+                    
+                    // Check for duplicate course priorities
+                    const coursePriorities = {};
+                    Object.entries(this.preferences).forEach(([courseName, pref]) => {
+                        const priority = pref.priority;
+                        if (coursePriorities[priority]) {
+                            errors.push(`• Courses "${coursePriorities[priority]}" and "${courseName}" both have priority ${priority}`);
+                        } else {
+                            coursePriorities[priority] = courseName;
+                        }
+                    });
+                    
+                    // Check for duplicate teacher priorities within each course
+                    Object.entries(this.preferences).forEach(([courseName, pref]) => {
+                        if (pref.teacherOptions && pref.teacherOptions.length > 1) {
+                            const teacherPriorities = {};
+                            pref.teacherOptions.forEach((option, index) => {
+                                const priority = option.priority;
+                                if (teacherPriorities[priority]) {
+                                    errors.push(`• Course "${courseName}": Teachers "${teacherPriorities[priority]}" and "${option.faculty}" both have priority ${priority}`);
+                                } else {
+                                    teacherPriorities[priority] = option.faculty || `Teacher ${index + 1}`;
+                                }
+                            });
+                        }
+                    });
+                    
+                    return errors;
+                },
+
+                canOptimize() {
+                    return this.validateAllPriorities().length === 0;
+                },
+
                 savePreferences() {
                     localStorage.setItem('ffcx_preferences', JSON.stringify(this.preferences));
                     alert('Preferences saved!');
                 },
 
                 async optimizeTimetable() {
+                    // Validate priorities before optimization
+                    const validationErrors = this.validateAllPriorities();
+                    if (validationErrors.length > 0) {
+                        alert(`❌ Cannot generate optimized timetable due to priority conflicts:\n\n${validationErrors.join('\n')}\n\nPlease fix these issues before optimizing.`);
+                        return;
+                    }
+
                     try {
                         const response = await fetch('/api/optimize-timetable', {
                             method: 'POST',
