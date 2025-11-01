@@ -1,0 +1,76 @@
+<!-- Navigation Header Component -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <i class="fas fa-calendar-alt me-2"></i>
+            <strong>FFCX</strong>
+            <span class="ms-2 badge bg-light text-primary">v2.0</span>
+        </a>
+        
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <!-- Navigation Items -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#" @click="fetchTimetable">
+                        <i class="fas fa-home me-1"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" @click="showPreferencesModal">
+                        <i class="fas fa-cog me-1"></i>Preferences
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Right Side Actions -->
+            <ul class="navbar-nav">
+                <!-- Stats Summary -->
+                <li class="nav-item d-none d-lg-block">
+                    <span class="navbar-text me-3">
+                        <i class="fas fa-book me-1"></i>{{ stats.enrolledCredits }} Credits
+                        <span class="mx-2">|</span>
+                        <i class="fas fa-clock me-1"></i>{{ stats.occupiedSlots }}/{{ stats.totalSlots }} Slots
+                    </span>
+                </li>
+                
+                <!-- Actions Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" @click="exportTimetable">
+                                <i class="fas fa-download me-2"></i>Export Timetable
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" @click="showImportModal">
+                                <i class="fas fa-upload me-2"></i>Import Timetable
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="#" @click="clearTimetable">
+                                <i class="fas fa-trash me-2"></i>Clear All
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- Dark Mode Toggle -->
+                <li class="nav-item">
+                    <button class="btn btn-link nav-link border-0" @click="toggleDarkMode" :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                        <i :class="isDarkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

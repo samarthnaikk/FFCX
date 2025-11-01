@@ -1,0 +1,186 @@
+/* Header and Layout Styles */
+.header-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 0;
+    margin-bottom: 30px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+/* Professional Table Styles */
+.professional-table {
+    font-size: 0.95em;
+}
+
+.professional-table thead th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    font-size: 0.8em;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.professional-table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.professional-table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.professional-table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.course-indicator {
+    width: 4px;
+    height: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+}
+
+.course-code-text {
+    font-family: 'Monaco', 'Consolas', monospace;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+.course-title {
+    font-weight: 500;
+    color: #2c3e50;
+    line-height: 1.4;
+}
+
+.faculty-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8em;
+}
+
+.faculty-name {
+    color: #495057;
+    font-weight: 500;
+}
+
+.credit-badge {
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.type-badge {
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lab-badge {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.theory-badge {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+.slots-text {
+    font-family: 'Monaco', 'Consolas', monospace;
+    color: #6c757d;
+    font-size: 0.85em;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.available-text {
+    font-family: 'Monaco', 'Consolas', monospace;
+    color: #495057;
+    font-size: 0.8em;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #d1ecf1;
+}
+
+.summary-item {
+    padding: 0.5rem;
+}
+
+.summary-item h5 {
+    font-weight: 700;
+    margin: 0;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-footer {
+    background-color: #f8f9fa !important;
+    padding: 1.5rem;
+}
+
+/* Autocomplete dropdown styles */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item .fw-bold {
+    color: #495057;
+}
+
+.dropdown-item .text-muted {
+    font-size: 0.875em;
+}
