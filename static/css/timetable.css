@@ -1,0 +1,16 @@
+body {
+    background: #f8f9fa;
+}
+.container {
+    margin-top: 40px;
+}
+h1 {
+    margin-bottom: 24px;
+}
+table {
+    background: white;
+}
+th, td {
+    text-align: center;
+    vertical-align: middle;
+}
