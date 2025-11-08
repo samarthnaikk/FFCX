@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Autocomplete,
   TextField,
@@ -48,26 +48,23 @@ const CourseSearch: React.FC = () => {
   const { addCourse, checkConflicts, loading: timetableLoading } = useTimetable();
 
   // Debounced course search
-  const debouncedCourseSearch = useCallback(
-    debounce(async (searchTerm: string) => {
-      if (searchTerm.length < 2) {
-        setCourseOptions([]);
-        return;
-      }
+  const debouncedCourseSearch = debounce(async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setCourseOptions([]);
+      return;
+    }
 
-      setLoadingCourses(true);
-      try {
-        const options = await courseApi.getCoursesAutocomplete(searchTerm);
-        setCourseOptions(options);
-      } catch (error) {
-        console.error('Failed to search courses:', error);
-        setError('Failed to search courses');
-      } finally {
-        setLoadingCourses(false);
-      }
-    }, 300),
-    []
-  );
+    setLoadingCourses(true);
+    try {
+      const options = await courseApi.getCoursesAutocomplete(searchTerm);
+      setCourseOptions(options);
+    } catch (error) {
+      console.error('Failed to search courses:', error);
+      setError('Failed to search courses');
+    } finally {
+      setLoadingCourses(false);
+    }
+  }, 300);
 
   // Handle course selection
   const handleCourseSelect = async (courseOption: AutocompleteOption | null) => {
@@ -170,182 +167,161 @@ const CourseSearch: React.FC = () => {
 
         <Stack spacing={3}>
           {/* Course Search */}
-            <Autocomplete
-              options={courseOptions}
-              value={selectedCourse}
-              onChange={(_, value) => handleCourseSelect(value)}
-              onInputChange={(_, value) => debouncedCourseSearch(value)}
-              loading={loadingCourses}
-              getOptionLabel={(option) => option.label}
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">
-                      {option.courseCode}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {option.courseTitle}
-                    </Typography>
-                    {option.credits && (
-                      <Chip
-                        label={`${option.credits} credits`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        sx={{ ml: 1 }}
-                      />
-                    )}
-                  </Box>
+          <Autocomplete
+            options={courseOptions}
+            value={selectedCourse}
+            onChange={(_, value) => handleCourseSelect(value)}
+            onInputChange={(_, value) => debouncedCourseSearch(value)}
+            loading={loadingCourses}
+            getOptionLabel={(option) => option.label}
+            renderOption={(props, option) => (
+              <Box component="li" {...props}>
+                <Box>
+                  <Typography variant="body2" fontWeight="bold">
+                    {option.courseCode}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {option.courseTitle}
+                  </Typography>
+                  {option.credits && (
+                    <Chip
+                      label={`${option.credits} credits`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
                 </Box>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Search Course"
-                  placeholder="Type course code or title..."
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
-                    endAdornment: (
-                      <>
-                        {loadingCourses ? <CircularProgress size={20} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-              noOptionsText="No courses found"
-            />
-          </Grid>
+              </Box>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Search Course"
+                placeholder="Type course code or title..."
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+                  endAdornment: (
+                    <>
+                      {loadingCourses ? <CircularProgress size={20} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
+            )}
+            noOptionsText="No courses found"
+          />
 
           {/* Course Details */}
           {courseDetails && (
-            <Grid item xs={12}>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Course Details
+            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Course Details
+              </Typography>
+              <Stack direction="row" spacing={4}>
+                <Typography variant="body2">
+                  <strong>Type:</strong> {courseDetails.courseType}
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>Type:</strong> {courseDetails.courseType}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>Credits:</strong> {courseDetails.credits}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>Total Hours:</strong> {courseDetails.totalHours}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>L-T-P-J:</strong> {courseDetails.lectureHours}-{courseDetails.tutorialHours}-{courseDetails.practicalHours}-{courseDetails.projectHours}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Grid>
+                <Typography variant="body2">
+                  <strong>Credits:</strong> {courseDetails.credits}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Total Hours:</strong> {courseDetails.totalHours}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>L-T-P-J:</strong> {courseDetails.lectureHours}-{courseDetails.tutorialHours}-{courseDetails.practicalHours}-{courseDetails.projectHours}
+                </Typography>
+              </Stack>
+            </Box>
           )}
 
           {/* Faculty Selection */}
           {facultyGroups.length > 0 && (
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Select Faculty</InputLabel>
-                <Select
-                  value={selectedFaculty}
-                  onChange={(e) => handleFacultySelect(e.target.value)}
-                  label="Select Faculty"
-                  disabled={loadingFaculty}
-                >
-                  {facultyGroups.map((facultyGroup) => (
-                    <MenuItem key={facultyGroup.faculty} value={facultyGroup.faculty}>
-                      <Box>
-                        <Typography variant="body2">{facultyGroup.faculty}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          {facultyGroup.slots.length} slot{facultyGroup.slots.length > 1 ? 's' : ''} available
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+            <FormControl fullWidth>
+              <InputLabel>Select Faculty</InputLabel>
+              <Select
+                value={selectedFaculty}
+                onChange={(e) => handleFacultySelect(e.target.value)}
+                label="Select Faculty"
+                disabled={loadingFaculty}
+              >
+                {facultyGroups.map((facultyGroup) => (
+                  <MenuItem key={facultyGroup.faculty} value={facultyGroup.faculty}>
+                    <Box>
+                      <Typography variant="body2">{facultyGroup.faculty}</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {facultyGroup.slots.length} slot{facultyGroup.slots.length > 1 ? 's' : ''} available
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           )}
 
           {/* Slot Selection */}
           {selectedFaculty && getAvailableSlots().length > 0 && (
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Select Slot</InputLabel>
-                <Select
-                  value={selectedSlot}
-                  onChange={(e) => handleSlotSelect(e.target.value)}
-                  label="Select Slot"
-                >
-                  {getAvailableSlots().map((slotInfo) => (
-                    <MenuItem key={slotInfo.slot} value={slotInfo.slot}>
-                      <Box>
-                        <Typography variant="body2">{slotInfo.slot}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          {slotInfo.venue} • {slotInfo.type}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+            <FormControl fullWidth>
+              <InputLabel>Select Slot</InputLabel>
+              <Select
+                value={selectedSlot}
+                onChange={(e) => handleSlotSelect(e.target.value)}
+                label="Select Slot"
+              >
+                {getAvailableSlots().map((slotInfo) => (
+                  <MenuItem key={slotInfo.slot} value={slotInfo.slot}>
+                    <Box>
+                      <Typography variant="body2">{slotInfo.slot}</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {slotInfo.venue} • {slotInfo.type}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           )}
 
           {/* Conflicts Display */}
           {conflicts.length > 0 && (
-            <Grid item xs={12}>
-              <Alert severity="warning">
-                <Typography variant="subtitle2" gutterBottom>
-                  Slot Conflicts Detected:
+            <Alert severity="warning">
+              <Typography variant="subtitle2" gutterBottom>
+                Slot Conflicts Detected:
+              </Typography>
+              {conflicts.map((conflict, index) => (
+                <Typography key={index} variant="body2">
+                  • {conflict.message}
                 </Typography>
-                {conflicts.map((conflict, index) => (
-                  <Typography key={index} variant="body2">
-                    • {conflict.message}
-                  </Typography>
-                ))}
-              </Alert>
-            </Grid>
+              ))}
+            </Alert>
           )}
 
           {/* Error Display */}
           {error && (
-            <Grid item xs={12}>
-              <Alert severity="error">{error}</Alert>
-            </Grid>
+            <Alert severity="error">{error}</Alert>
           )}
 
           {/* Add Button */}
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleAddCourse}
-              disabled={
-                !selectedCourse || 
-                !selectedFaculty || 
-                !selectedSlot || 
-                conflicts.length > 0 || 
-                timetableLoading
-              }
-              fullWidth
-              size="large"
-            >
-              {timetableLoading ? 'Adding...' : 'Add Course to Timetable'}
-            </Button>
-          </Grid>
-        </Grid>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddCourse}
+            disabled={
+              !selectedCourse || 
+              !selectedFaculty || 
+              !selectedSlot || 
+              conflicts.length > 0 || 
+              timetableLoading
+            }
+            fullWidth
+            size="large"
+          >
+            {timetableLoading ? 'Adding...' : 'Add Course to Timetable'}
+          </Button>
+        </Stack>
       </CardContent>
     </Card>
   );

@@ -9,13 +9,9 @@ import {
   Paper,
   Typography,
   Box,
-  Chip,
-  Tooltip,
   useTheme,
   alpha,
 } from '@mui/material';
-import { useTimetable } from '../context/TimetableContext';
-import { TimetableEntry } from '../types';
 
 // Time slot definitions based on VIT FFCS
 const TIME_SLOTS = [
@@ -30,22 +26,40 @@ const TIME_SLOTS = [
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-interface TimetableGridProps {
-  onSlotClick?: (day: string, slot: string, entries: TimetableEntry[]) => void;
-}
+// Sample timetable data for demonstration
+const SAMPLE_TIMETABLE: { [day: string]: { [slot: string]: any[] } } = {
+  Monday: {
+    'A1': [{
+      courseCode: 'CSE101',
+      courseTitle: 'Programming Fundamentals',
+      faculty: 'Dr. Smith',
+      venue: 'SJT101',
+      type: 'TH',
+      credits: 3
+    }]
+  },
+  Tuesday: {
+    'A2': [{
+      courseCode: 'MAT101',
+      courseTitle: 'Calculus',
+      faculty: 'Dr. Johnson',
+      venue: 'SJT201',
+      type: 'TH',
+      credits: 4
+    }]
+  },
+  Wednesday: {},
+  Thursday: {},
+  Friday: {}
+};
 
-const TimetableGrid: React.FC<TimetableGridProps> = ({ onSlotClick }) => {
-  const { timetable, loading } = useTimetable();
+const TimetableGrid: React.FC = () => {
   const theme = useTheme();
 
   // Function to get entries for a specific day and time slot
-  const getEntriesForSlot = (day: string, timeSlot: string): TimetableEntry[] => {
-    if (!timetable?.schedule || !timetable.schedule[day as keyof typeof timetable.schedule]) {
-      return [];
-    }
-
-    const daySchedule = timetable.schedule[day as keyof typeof timetable.schedule];
-    const entries: TimetableEntry[] = [];
+  const getEntriesForSlot = (day: string, timeSlot: string): any[] => {
+    const daySchedule = SAMPLE_TIMETABLE[day] || {};
+    const entries: any[] = [];
 
     // Check all possible slots for this time period
     const slotsToCheck = timeSlot.split('/');
@@ -74,64 +88,33 @@ const TimetableGrid: React.FC<TimetableGridProps> = ({ onSlotClick }) => {
     };
   };
 
-  // Render course entry chip
-  const renderCourseEntry = (entry: TimetableEntry, index: number) => {
-    const isLab = entry.type === 'LAB' || entry.time.includes('14:00') || entry.time.includes('17:00');
+  // Render course entry
+  const renderCourseEntry = (entry: any, index: number) => {
+    const isLab = entry.type === 'LAB';
     const colors = getCourseColor(entry.type, isLab);
 
     return (
-      <Tooltip
+      <Box
         key={index}
-        title={
-          <Box>
-            <Typography variant="subtitle2">{entry.courseTitle}</Typography>
-            <Typography variant="body2">Faculty: {entry.faculty}</Typography>
-            <Typography variant="body2">Venue: {entry.venue}</Typography>
-            <Typography variant="body2">Credits: {entry.credits}</Typography>
-            <Typography variant="body2">Time: {entry.time}</Typography>
-          </Box>
-        }
-        arrow
+        sx={{
+          ...colors,
+          border: 1,
+          borderRadius: 1,
+          padding: 1,
+          margin: 0.25,
+          textAlign: 'center',
+          minHeight: 40,
+        }}
       >
-        <Chip
-          label={
-            <Box>
-              <Typography variant="caption" fontWeight="bold">
-                {entry.courseCode}
-              </Typography>
-              <br />
-              <Typography variant="caption">
-                {entry.faculty}
-              </Typography>
-            </Box>
-          }
-          size="small"
-          variant="outlined"
-          sx={{
-            ...colors,
-            margin: 0.25,
-            height: 'auto',
-            '& .MuiChip-label': {
-              padding: '4px 8px',
-              textAlign: 'center',
-            },
-            cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: alpha(colors.borderColor, 0.2),
-            },
-          }}
-        />
-      </Tooltip>
-    );
-  };
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
-        <Typography>Loading timetable...</Typography>
+        <Typography variant="caption" fontWeight="bold" display="block">
+          {entry.courseCode}
+        </Typography>
+        <Typography variant="caption" display="block">
+          {entry.faculty}
+        </Typography>
       </Box>
     );
-  }
+  };
 
   return (
     <TableContainer 
@@ -205,15 +188,11 @@ const TimetableGrid: React.FC<TimetableGridProps> = ({ onSlotClick }) => {
                     align="center"
                     sx={{
                       padding: 1,
-                      cursor: entries.length > 0 ? 'pointer' : 'default',
-                      '&:hover': entries.length > 0 ? {
-                        backgroundColor: alpha(theme.palette.action.hover, 0.04),
-                      } : {},
+                      verticalAlign: 'top',
                     }}
-                    onClick={() => onSlotClick && entries.length > 0 && onSlotClick(day, timeSlot.slot, entries)}
                   >
                     {entries.length > 0 ? (
-                      <Box display="flex" flexDirection="column" gap={0.5}>
+                      <Box>
                         {entries.map((entry, index) => renderCourseEntry(entry, index))}
                       </Box>
                     ) : (
