@@ -43,18 +43,66 @@ const DAY_SLOT_MAPPING: { [day: string]: string[] } = {
 const TimetableGrid: React.FC = () => {
   const theme = useTheme();
 
+  // Function to format time range (start time above end time)
+  const formatTimeRange = (timeRange: string) => {
+    if (!timeRange || timeRange === '' || timeRange === 'LUNCH') {
+      return timeRange;
+    }
+    
+    const [startTime, endTime] = timeRange.split(' to ');
+    return { startTime, endTime };
+  };
+
+  // Function to render time cell content
+  const renderTimeCell = (timeRange: string) => {
+    if (timeRange === 'LUNCH') {
+      return (
+        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.9rem' }}>
+          LUNCH
+        </Typography>
+      );
+    }
+
+    if (!timeRange || timeRange === '') {
+      return null;
+    }
+
+    const timeObj = formatTimeRange(timeRange);
+    if (typeof timeObj === 'object' && timeObj.startTime && timeObj.endTime) {
+      return (
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem', lineHeight: 1.1 }}>
+            {timeObj.startTime}
+          </Typography>
+          <Typography variant="caption" sx={{ fontSize: '0.7rem', lineHeight: 1, color: 'text.secondary' }}>
+            to
+          </Typography>
+          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem', lineHeight: 1.1 }}>
+            {timeObj.endTime}
+          </Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.75rem' }}>
+        {timeRange}
+      </Typography>
+    );
+  };
+
   // Function to render slot content
   const renderSlotContent = (slotContent: string) => {
     if (!slotContent || slotContent === '') {
       return (
         <Box sx={{ 
-          minHeight: 30, 
+          minHeight: 40, 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
           width: '100%'
         }}>
-          <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.6rem' }}>
+          <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.8rem' }}>
             -
           </Typography>
         </Box>
@@ -68,9 +116,9 @@ const TimetableGrid: React.FC = () => {
           border: 1,
           borderColor: theme.palette.primary.main,
           borderRadius: 0.5,
-          padding: '2px 4px',
+          padding: '4px 6px',
           textAlign: 'center',
-          minHeight: 30,
+          minHeight: 40,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -78,9 +126,9 @@ const TimetableGrid: React.FC = () => {
           boxSizing: 'border-box',
         }}
       >
-        <Typography variant="caption" fontWeight="bold" sx={{ 
-          fontSize: '0.6rem',
-          lineHeight: 1,
+        <Typography variant="body2" fontWeight="bold" sx={{ 
+          fontSize: '0.8rem',
+          lineHeight: 1.2,
           wordBreak: 'break-word'
         }}>
           {slotContent}
@@ -138,14 +186,13 @@ const TimetableGrid: React.FC = () => {
                     backgroundColor: alpha(theme.palette.primary.main, 0.2),
                     fontWeight: 'bold',
                     width: `${100/14}%`,
-                    padding: '2px',
+                    padding: '6px 2px',
                     textAlign: 'center',
                     verticalAlign: 'middle',
+                    height: '70px',
                   }}
                 >
-                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.55rem', lineHeight: 1 }}>
-                    {time || ''}
-                  </Typography>
+                  {renderTimeCell(time)}
                 </TableCell>
               ))}
             </TableRow>
@@ -173,14 +220,13 @@ const TimetableGrid: React.FC = () => {
                   sx={{ 
                     backgroundColor: alpha(theme.palette.success.main, 0.2),
                     fontWeight: 'bold',
-                    padding: '2px',
+                    padding: '6px 2px',
                     textAlign: 'center',
                     verticalAlign: 'middle',
+                    height: '70px',
                   }}
                 >
-                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.55rem', lineHeight: 1 }}>
-                    {time === 'LUNCH' ? 'LUNCH' : time || ''}
-                  </Typography>
+                  {renderTimeCell(time)}
                 </TableCell>
               ))}
             </TableRow>
@@ -193,7 +239,7 @@ const TimetableGrid: React.FC = () => {
                   '&:nth-of-type(even)': { 
                     backgroundColor: alpha(theme.palette.grey[50], 0.5) 
                   },
-                  height: 50,
+                  height: 60,
                 }}
               >
                 <TableCell 
