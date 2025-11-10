@@ -3,10 +3,8 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Typography,
   Box,
   useTheme,
@@ -57,9 +55,17 @@ const TimetableGrid: React.FC = () => {
   const renderTimeCell = (timeRange: string) => {
     if (timeRange === 'LUNCH') {
       return (
-        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.9rem' }}>
-          LUNCH
-        </Typography>
+        <Box sx={{
+          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          padding: '6px 8px',
+          borderRadius: 1,
+          display: 'inline-block',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+        }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.95rem', color: '#ffffff', fontFamily: 'inherit' }}>
+            LUNCH
+          </Typography>
+        </Box>
       );
     }
 
@@ -71,13 +77,13 @@ const TimetableGrid: React.FC = () => {
     if (typeof timeObj === 'object' && timeObj.startTime && timeObj.endTime) {
       return (
         <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem', lineHeight: 1.1 }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem', lineHeight: 1.1, color: '#ffffff', fontFamily: 'inherit' }}>
             {timeObj.startTime}
           </Typography>
-          <Typography variant="caption" sx={{ fontSize: '0.7rem', lineHeight: 1, color: 'text.secondary' }}>
+          <Typography variant="caption" sx={{ fontSize: '0.7rem', lineHeight: 1, color: 'rgba(255, 255, 255, 0.7)', fontFamily: 'inherit' }}>
             to
           </Typography>
-          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem', lineHeight: 1.1 }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem', lineHeight: 1.1, color: '#ffffff', fontFamily: 'inherit' }}>
             {timeObj.endTime}
           </Typography>
         </Box>
@@ -102,7 +108,7 @@ const TimetableGrid: React.FC = () => {
           justifyContent: 'center',
           width: '100%'
         }}>
-          <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.8rem' }}>
+          <Typography variant="body2" color="rgba(255, 255, 255, 0.5)" sx={{ fontSize: '0.8rem', fontFamily: 'inherit' }}>
             -
           </Typography>
         </Box>
@@ -112,10 +118,9 @@ const TimetableGrid: React.FC = () => {
     return (
       <Box
         sx={{
-          backgroundColor: alpha(theme.palette.primary.main, 0.1),
-          border: 1,
-          borderColor: theme.palette.primary.main,
-          borderRadius: 0.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: 1,
           padding: '4px 6px',
           textAlign: 'center',
           minHeight: 40,
@@ -129,7 +134,9 @@ const TimetableGrid: React.FC = () => {
         <Typography variant="body2" fontWeight="bold" sx={{ 
           fontSize: '0.8rem',
           lineHeight: 1.2,
-          wordBreak: 'break-word'
+          wordBreak: 'break-word',
+          color: '#ffffff',
+          fontFamily: 'inherit'
         }}>
           {slotContent}
         </Typography>
@@ -138,28 +145,42 @@ const TimetableGrid: React.FC = () => {
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100vh', padding: 1, overflow: 'hidden' }}>
-      <Typography variant="h6" fontWeight="bold" mb={1} textAlign="center">
-        VIT FFCS Timetable
-      </Typography>
-      
-      <TableContainer 
-        component={Paper} 
-        elevation={3}
-        sx={{ 
-          height: 'calc(100vh - 80px)',
-          overflow: 'auto',
-        }}
-      >
+    <Box
+      sx={{ 
+        width: '100vw',
+        height: '100vh',
+        overflow: 'auto',
+        padding: 1,
+        borderRadius: '0px',
+        // Mac-style glassmorphism - single container that fills screen
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(20px)',
+        border: 'none',
+        boxShadow: 'none',
+        fontFamily: "'Elms Sans', 'Inter', 'Segoe UI', Roboto, sans-serif",
+      }}
+    >
         <Table 
           size="small" 
           sx={{ 
             tableLayout: 'fixed',
             width: '100%',
+            borderCollapse: 'collapse',
+            borderRadius: '20px',
+            overflow: 'hidden',
+            backgroundColor: 'transparent',
+            // Rose red shadow on table border
+            boxShadow: '0 0 20px rgba(225, 29, 72, 0.4), inset 0 0 20px rgba(225, 29, 72, 0.1)',
             '& .MuiTableCell-root': {
-              border: '1px solid #e0e0e0',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               verticalAlign: 'middle',
-            }
+              padding: 0,
+              backgroundColor: 'transparent',
+              color: '#ffffff',
+            },
+            '& .MuiTableRow-root:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            },
           }}
         >
           {/* Theory Hours Row */}
@@ -167,15 +188,16 @@ const TimetableGrid: React.FC = () => {
             <TableRow>
               <TableCell 
                 sx={{ 
-                  backgroundColor: theme.palette.primary.main,
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
                   color: 'white',
                   fontWeight: 'bold',
                   width: '70px',
                   padding: '4px',
                   textAlign: 'center',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                 }}
               >
-                <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.65rem' }}>
+                <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem', fontFamily: 'inherit' }}>
                   THEORY HOURS
                 </Typography>
               </TableCell>
@@ -183,13 +205,14 @@ const TimetableGrid: React.FC = () => {
                 <TableCell 
                   key={index}
                   sx={{ 
-                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                    backgroundColor: 'transparent',
                     fontWeight: 'bold',
                     width: `${100/14}%`,
                     padding: '6px 2px',
                     textAlign: 'center',
                     verticalAlign: 'middle',
                     height: '70px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
                   {renderTimeCell(time)}
@@ -203,14 +226,15 @@ const TimetableGrid: React.FC = () => {
             <TableRow>
               <TableCell 
                 sx={{ 
-                  backgroundColor: theme.palette.success.main,
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
                   color: 'white',
                   fontWeight: 'bold',
                   padding: '4px',
                   textAlign: 'center',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                 }}
               >
-                <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.65rem' }}>
+                <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem', fontFamily: 'inherit' }}>
                   LAB HOURS
                 </Typography>
               </TableCell>
@@ -218,12 +242,13 @@ const TimetableGrid: React.FC = () => {
                 <TableCell 
                   key={index}
                   sx={{ 
-                    backgroundColor: alpha(theme.palette.success.main, 0.2),
+                    backgroundColor: 'transparent',
                     fontWeight: 'bold',
                     padding: '6px 2px',
                     textAlign: 'center',
                     verticalAlign: 'middle',
                     height: '70px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
                   {renderTimeCell(time)}
@@ -236,23 +261,21 @@ const TimetableGrid: React.FC = () => {
               <TableRow 
                 key={day}
                 sx={{ 
-                  '&:nth-of-type(even)': { 
-                    backgroundColor: alpha(theme.palette.grey[50], 0.5) 
-                  },
                   height: 60,
                 }}
               >
                 <TableCell 
                   sx={{ 
-                    backgroundColor: alpha(theme.palette.info.main, 0.8),
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     color: 'white',
                     fontWeight: 'bold',
                     padding: '4px',
                     textAlign: 'center',
                     verticalAlign: 'middle',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                   }}
                 >
-                  <Typography variant="body2" fontWeight="bold">
+                  <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'inherit' }}>
                     {day}
                   </Typography>
                 </TableCell>
@@ -272,7 +295,6 @@ const TimetableGrid: React.FC = () => {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
     </Box>
   );
 };

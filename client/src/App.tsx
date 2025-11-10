@@ -42,26 +42,13 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ flexGrow: 1 }}>
-        {/* App Bar */}
-        <AppBar position="static" elevation={2}>
-          <Toolbar>
-            <ScheduleIcon sx={{ mr: 2 }} />
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              FFCX - Timetable Optimizer
-            </Typography>
-          </Toolbar>
-        </AppBar>
-
-        <Container maxWidth="xl" sx={{ mt: 3, mb: 3 }}>
-          {/* Timetable Grid Section */}
-          <Paper elevation={2} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Weekly Timetable
-            </Typography>
-            <TimetableGrid />
-          </Paper>
-        </Container>
+      <Box sx={{ 
+        width: '100vw', 
+        height: '100vh', 
+        backgroundColor: '#000000',
+        overflow: 'hidden'
+      }}>
+        <TimetableGrid />
       </Box>
     </ThemeProvider>
   );
