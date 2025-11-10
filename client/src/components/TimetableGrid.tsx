@@ -40,39 +40,26 @@ const DAY_SLOT_MAPPING: { [day: string]: string[] } = {
   FRI: ['E1 / L25', 'C1 / L26', 'TA1 / L27', 'TF1 / L28', 'TD1 / L29', 'L30', '', 'E2 / L55', 'C2 / L56', 'TA2 / L57', 'TF2 / L58', 'TDD2 / L59', 'L60', 'V7']
 };
 
-// Sample timetable data for demonstration (can be populated with actual courses)
-const SAMPLE_TIMETABLE: { [key: string]: any } = {
-  // Add sample courses here if needed
-  'A1': { courseCode: 'CSE2001', courseTitle: 'Computer Programming', faculty: 'Dr. Smith', venue: 'SJT101' },
-  'B1': { courseCode: 'MAT2001', courseTitle: 'Calculus', faculty: 'Dr. Johnson', venue: 'SJT201' },
-  'L1': { courseCode: 'CSE2001', courseTitle: 'Computer Programming Lab', faculty: 'Dr. Smith', venue: 'SCOPE Lab1' }
-};
-
 const TimetableGrid: React.FC = () => {
   const theme = useTheme();
-
-  // Function to get course info for a slot
-  const getCourseForSlot = (slotContent: string) => {
-    if (!slotContent) return null;
-    
-    // Extract the main slot (first part before /)
-    const mainSlot = slotContent.split(' / ')[0];
-    return SAMPLE_TIMETABLE[mainSlot] || null;
-  };
 
   // Function to render slot content
   const renderSlotContent = (slotContent: string) => {
     if (!slotContent || slotContent === '') {
       return (
-        <Box sx={{ minHeight: 20 }}>
-          <Typography variant="caption" color="textSecondary">
+        <Box sx={{ 
+          minHeight: 30, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          width: '100%'
+        }}>
+          <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.6rem' }}>
             -
           </Typography>
         </Box>
       );
     }
-
-    const course = getCourseForSlot(slotContent);
 
     return (
       <Box
@@ -80,20 +67,24 @@ const TimetableGrid: React.FC = () => {
           backgroundColor: alpha(theme.palette.primary.main, 0.1),
           border: 1,
           borderColor: theme.palette.primary.main,
-          borderRadius: 1,
-          padding: 0.3,
+          borderRadius: 0.5,
+          padding: '2px 4px',
           textAlign: 'center',
-          minHeight: 20,
+          minHeight: 30,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
-        <Typography variant="caption" fontWeight="bold" display="block" sx={{ fontSize: '0.65rem' }}>
+        <Typography variant="caption" fontWeight="bold" sx={{ 
+          fontSize: '0.6rem',
+          lineHeight: 1,
+          wordBreak: 'break-word'
+        }}>
           {slotContent}
         </Typography>
-        {course && (
-          <Typography variant="caption" display="block" sx={{ fontSize: '0.55rem' }}>
-            {course.courseCode}
-          </Typography>
-        )}
       </Box>
     );
   };
@@ -110,38 +101,49 @@ const TimetableGrid: React.FC = () => {
         sx={{ 
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
-          fontSize: '0.7rem',
         }}
       >
-        <Table size="small" sx={{ tableLayout: 'fixed' }}>
+        <Table 
+          size="small" 
+          sx={{ 
+            tableLayout: 'fixed',
+            width: '100%',
+            '& .MuiTableCell-root': {
+              border: '1px solid #e0e0e0',
+              verticalAlign: 'middle',
+            }
+          }}
+        >
           {/* Theory Hours Row */}
           <TableHead>
-            <TableRow sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.1) }}>
+            <TableRow>
               <TableCell 
                 sx={{ 
                   backgroundColor: theme.palette.primary.main,
                   color: 'white',
                   fontWeight: 'bold',
-                  width: '80px',
-                  padding: 0.5,
+                  width: '70px',
+                  padding: '4px',
+                  textAlign: 'center',
                 }}
               >
-                <Typography variant="caption" fontWeight="bold">
+                <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.65rem' }}>
                   THEORY HOURS
                 </Typography>
               </TableCell>
               {THEORY_HOURS.map((time, index) => (
                 <TableCell 
                   key={index}
-                  align="center"
                   sx={{ 
                     backgroundColor: alpha(theme.palette.primary.main, 0.2),
                     fontWeight: 'bold',
-                    width: '90px',
-                    padding: 0.5,
+                    width: `${100/14}%`,
+                    padding: '2px',
+                    textAlign: 'center',
+                    verticalAlign: 'middle',
                   }}
                 >
-                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.6rem' }}>
+                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.55rem', lineHeight: 1 }}>
                     {time || ''}
                   </Typography>
                 </TableCell>
@@ -151,30 +153,32 @@ const TimetableGrid: React.FC = () => {
 
           {/* Lab Hours Row */}
           <TableBody>
-            <TableRow sx={{ backgroundColor: alpha(theme.palette.success.main, 0.1) }}>
+            <TableRow>
               <TableCell 
                 sx={{ 
                   backgroundColor: theme.palette.success.main,
                   color: 'white',
                   fontWeight: 'bold',
-                  padding: 0.5,
+                  padding: '4px',
+                  textAlign: 'center',
                 }}
               >
-                <Typography variant="caption" fontWeight="bold">
+                <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.65rem' }}>
                   LAB HOURS
                 </Typography>
               </TableCell>
               {LAB_HOURS.map((time, index) => (
                 <TableCell 
                   key={index}
-                  align="center"
                   sx={{ 
                     backgroundColor: alpha(theme.palette.success.main, 0.2),
                     fontWeight: 'bold',
-                    padding: 0.5,
+                    padding: '2px',
+                    textAlign: 'center',
+                    verticalAlign: 'middle',
                   }}
                 >
-                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.6rem' }}>
+                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.55rem', lineHeight: 1 }}>
                     {time === 'LUNCH' ? 'LUNCH' : time || ''}
                   </Typography>
                 </TableCell>
@@ -182,14 +186,14 @@ const TimetableGrid: React.FC = () => {
             </TableRow>
 
             {/* Days and Timetable Data */}
-            {DAYS.map((day) => (
+            {DAYS.map((day, dayIndex) => (
               <TableRow 
                 key={day}
                 sx={{ 
-                  '&:nth-of-type(odd)': { 
-                    backgroundColor: alpha(theme.palette.grey[50], 0.3) 
+                  '&:nth-of-type(even)': { 
+                    backgroundColor: alpha(theme.palette.grey[50], 0.5) 
                   },
-                  height: 60,
+                  height: 50,
                 }}
               >
                 <TableCell 
@@ -197,8 +201,9 @@ const TimetableGrid: React.FC = () => {
                     backgroundColor: alpha(theme.palette.info.main, 0.8),
                     color: 'white',
                     fontWeight: 'bold',
-                    borderRight: `2px solid ${theme.palette.grey[300]}`,
-                    padding: 1,
+                    padding: '4px',
+                    textAlign: 'center',
+                    verticalAlign: 'middle',
                   }}
                 >
                   <Typography variant="body2" fontWeight="bold">
@@ -208,9 +213,9 @@ const TimetableGrid: React.FC = () => {
                 {DAY_SLOT_MAPPING[day].map((slotContent, timeIndex) => (
                   <TableCell
                     key={`${day}-${timeIndex}`}
-                    align="center"
                     sx={{
-                      padding: 0.5,
+                      padding: '2px',
+                      textAlign: 'center',
                       verticalAlign: 'middle',
                     }}
                   >
