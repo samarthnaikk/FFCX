@@ -16,7 +16,7 @@ import {
 // Theory hour timings from referencetext.txt
 const THEORY_HOURS = [
   '8:00 AM to 8:50 AM', '9:00 AM to 9:50 AM', '10:00 AM to 10:50 AM', 
-  '11:00 AM to 11:50 AM', '12:00 PM to 12:50 PM', '',
+  '11:00 AM to 11:50 AM', '12:00 PM to 12:50 PM', '', '',
   '2:00 PM to 2:50 PM', '3:00 PM to 3:50 PM', '4:00 PM to 4:50 PM', 
   '5:00 PM to 5:50 PM', '6:00 PM to 6:50 PM', '6:51 PM to 7:00 PM', '7:01 PM to 7:50 PM'
 ];
