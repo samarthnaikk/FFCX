@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -10,6 +10,8 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
+import AddCourseForm from './AddCourseForm';
+import { Course } from '../services/courseService';
 
 // Theory hour timings from referencetext.txt
 const THEORY_HOURS = [
@@ -40,6 +42,14 @@ const DAY_SLOT_MAPPING: { [day: string]: string[] } = {
 
 const TimetableGrid: React.FC = () => {
   const theme = useTheme();
+  const [addedCourses, setAddedCourses] = useState<{ [slot: string]: Course }>({});
+
+  const handleAddCourse = (course: Course) => {
+    setAddedCourses(prev => ({
+      ...prev,
+      [course.slot]: course
+    }));
+  };
 
   // Function to format time range (start time above end time)
   const formatTimeRange = (timeRange: string) => {
@@ -98,7 +108,62 @@ const TimetableGrid: React.FC = () => {
   };
 
   // Function to render slot content
-  const renderSlotContent = (slotContent: string) => {
+  const renderSlotContent = (slotContent: string, day: string, timeIndex: number) => {
+    // Check for added courses first
+    const daySlots = DAY_SLOT_MAPPING[day][timeIndex];
+    if (daySlots) {
+      const slots = daySlots.split(' / ');
+      for (const slot of slots) {
+        if (addedCourses[slot]) {
+          const course = addedCourses[slot];
+          return (
+            <Box
+              sx={{
+                backgroundColor: 'rgba(225, 29, 72, 0.15)',
+                border: '1px solid rgba(225, 29, 72, 0.4)',
+                borderRadius: 1,
+                padding: '4px 6px',
+                textAlign: 'center',
+                minHeight: 40,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              <Typography variant="caption" fontWeight="bold" sx={{ 
+                fontSize: '0.7rem',
+                lineHeight: 1,
+                color: '#ffffff',
+                fontFamily: 'inherit'
+              }}>
+                {course.courseCode}
+              </Typography>
+              <Typography variant="caption" sx={{ 
+                fontSize: '0.6rem',
+                lineHeight: 1,
+                color: 'rgba(255, 255, 255, 0.8)',
+                fontFamily: 'inherit',
+                mt: 0.2
+              }}>
+                {course.faculty}
+              </Typography>
+              <Typography variant="caption" sx={{ 
+                fontSize: '0.6rem',
+                lineHeight: 1,
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontFamily: 'inherit'
+              }}>
+                {course.venue}
+              </Typography>
+            </Box>
+          );
+        }
+      }
+    }
+
     if (!slotContent || slotContent === '') {
       return (
         <Box sx={{ 
@@ -288,13 +353,14 @@ const TimetableGrid: React.FC = () => {
                       verticalAlign: 'middle',
                     }}
                   >
-                    {renderSlotContent(slotContent)}
+                    {renderSlotContent(slotContent, day, timeIndex)}
                   </TableCell>
                 ))}
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        <AddCourseForm onAddCourse={handleAddCourse} />
     </Box>
   );
 };
